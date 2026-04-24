@@ -17,12 +17,6 @@ config :token_dashex, TokenDashexWeb.Endpoint,
   secret_key_base: "LFSq5nNGJosTRu0A9PsVPesc766GtXUdhhI1hz3IYEQVPFh6Kl25Bjbh2KIxvk5p",
   server: false
 
-# In test we don't send emails
-config :token_dashex, TokenDashex.Mailer, adapter: Swoosh.Adapters.Test
-
-# Disable swoosh api client as it is only required for production adapters
-config :swoosh, :api_client, false
-
 # Print only warnings and errors during test
 config :logger, level: :warning
 
