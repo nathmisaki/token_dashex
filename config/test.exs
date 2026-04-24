@@ -6,12 +6,9 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :token_dashex, TokenDashex.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "token_dashex_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: ":memory:",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2
+  pool_size: 1
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
