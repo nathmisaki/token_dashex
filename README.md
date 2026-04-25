@@ -9,7 +9,7 @@ This is a port of the upstream Python
 LiveView 1.1, with feature parity across all seven tabs (Overview, Prompts,
 Sessions, Projects, Skills, Tips, Settings).
 
-## Quick start
+## Quick start (dev)
 
 ```bash
 mix deps.get
@@ -20,6 +20,33 @@ mix dashex.dashboard
 The dashboard opens at <http://127.0.0.1:4000>. The first launch may take
 a few seconds to ingest existing JSONL files; subsequent launches are
 incremental.
+
+## Packaged release
+
+token_dashex ships as a self-contained Erlang release. Build once, then
+run anywhere with the same OS + Erlang ABI without Mix or Elixir on the
+target machine:
+
+```bash
+MIX_ENV=prod mix deps.get --only prod
+MIX_ENV=prod mix assets.deploy
+MIX_ENV=prod mix release
+
+# ~88 MB output:
+_build/prod/rel/token_dashex/
+
+# Database lives at ~/.claude/token-dashex.db by default (override via
+# TOKEN_DASHEX_DB). The release auto-generates SECRET_KEY_BASE on first
+# launch and persists it next to the database with mode 0600.
+_build/prod/rel/token_dashex/bin/migrate
+_build/prod/rel/token_dashex/bin/scan
+_build/prod/rel/token_dashex/bin/stats
+_build/prod/rel/token_dashex/bin/server   # bind 127.0.0.1:4000
+```
+
+`server` binds loopback by default (privacy-preserving). To expose the
+dashboard on the LAN, set `BIND_ADDRESS=0.0.0.0`. Override `PORT`,
+`PHX_HOST`, and `CLAUDE_PROJECTS_DIR` as needed.
 
 ## CLI tasks
 
