@@ -46,13 +46,15 @@ defmodule TokenDashex.MixProject do
       ],
       # Burrito self-extracting binary. ERTS is fetched per target by
       # Burrito (pre-built tarballs from erlangsters). NIFs still need
-      # `CC_PRECOMPILER_CURRENT_TARGET=aarch64-apple-darwin` set in CI
-      # so exqlite resolves the macOS arm64 prebuilt artefact.
+      # `CC_PRECOMPILER_CURRENT_TARGET=<triple>` set in CI so exqlite
+      # resolves the right prebuilt artefact for the target platform.
       token_dashex_app: [
         steps: [:assemble, &Burrito.wrap/1],
         burrito: [
           targets: [
-            macos_arm64: [os: :darwin, cpu: :aarch64]
+            linux_x86_64: [os: :linux, cpu: :x86_64],
+            macos_arm64: [os: :darwin, cpu: :aarch64],
+            windows_x86_64: [os: :windows, cpu: :x86_64]
           ]
         ]
       ]
