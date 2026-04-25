@@ -6,11 +6,12 @@ defmodule TokenDashex.Tips.Rule do
   """
 
   @type tip :: %{
-          key: String.t(),
-          category: String.t(),
-          title: String.t(),
-          body: String.t(),
-          severity: :info | :warning
+          required(:key) => String.t(),
+          required(:category) => String.t(),
+          required(:title) => String.t(),
+          required(:body) => String.t(),
+          required(:severity) => :info | :warning,
+          optional(:scope) => String.t()
         }
 
   @callback evaluate() :: [tip]

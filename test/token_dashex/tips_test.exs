@@ -28,14 +28,15 @@ defmodule TokenDashex.TipsTest do
   end
 
   describe "CacheDiscipline" do
-    test "fires when cache hit ratio is below 0.5" do
+    test "fires per project when cache hit ratio is below 0.4" do
       AnalyticsFixtures.insert_message(
-        cache_creation_tokens: 1_000,
-        cache_read_tokens: 100
+        project_slug: "my-project",
+        cache_creation_tokens: 200_000,
+        cache_read_tokens: 10_000
       )
 
       tips = TokenDashex.Tips.CacheDiscipline.evaluate()
-      assert [%{key: "cache_discipline"}] = tips
+      assert [%{key: "cache:" <> _}] = tips
     end
 
     test "is silent when cache hit ratio is healthy" do
@@ -46,10 +47,19 @@ defmodule TokenDashex.TipsTest do
 
       assert [] = TokenDashex.Tips.CacheDiscipline.evaluate()
     end
+
+    test "is silent when total tokens are below 100k" do
+      AnalyticsFixtures.insert_message(
+        cache_creation_tokens: 1_000,
+        cache_read_tokens: 100
+      )
+
+      assert [] = TokenDashex.Tips.CacheDiscipline.evaluate()
+    end
   end
 
   describe "RepeatedReads" do
-    test "fires when more than five Reads in a session" do
+    test "fires one tip per offending session" do
       msg = AnalyticsFixtures.insert_message(session_id: "rr1")
 
       for _ <- 1..6 do
@@ -61,7 +71,26 @@ defmodule TokenDashex.TipsTest do
         })
       end
 
-      assert [%{key: "repeated_reads"}] = TokenDashex.Tips.RepeatedReads.evaluate()
+      tips = TokenDashex.Tips.RepeatedReads.evaluate()
+      assert [%{key: "repeat-file:" <> _}] = tips
+    end
+
+    test "produces multiple tips for multiple offending sessions" do
+      for session <- ["rr_a", "rr_b"] do
+        msg = AnalyticsFixtures.insert_message(session_id: session)
+
+        for _ <- 1..6 do
+          Repo.insert!(%Tool{
+            message_id: msg.id,
+            session_id: msg.session_id,
+            name: "Read",
+            input_tokens: 1
+          })
+        end
+      end
+
+      tips = TokenDashex.Tips.RepeatedReads.evaluate()
+      assert length(tips) == 2
     end
   end
 

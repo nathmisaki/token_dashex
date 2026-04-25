@@ -1,6 +1,7 @@
 defmodule TokenDashex.Tips.ExpensiveSessions do
   @moduledoc """
-  Surfaces the top five sessions by USD cost so the user can investigate.
+  Surfaces sessions costing more than $1 USD so the user can investigate.
+  Produces one tip per expensive session (like the Python dashboard).
   """
 
   @behaviour TokenDashex.Tips.Rule
@@ -8,40 +9,30 @@ defmodule TokenDashex.Tips.ExpensiveSessions do
   alias TokenDashex.Analytics.Sessions
   alias TokenDashex.Pricing
 
-  @key "expensive_sessions"
+  @min_cost 1.0
 
   @impl true
   def evaluate do
-    rows =
-      Sessions.recent(%{limit: 100})
-      |> Enum.map(&with_cost/1)
-      |> Enum.sort_by(& &1.cost, :desc)
-      |> Enum.take(5)
-      |> Enum.filter(&(&1.cost > 1.0))
+    Sessions.recent(%{limit: 100})
+    |> Enum.map(&with_cost/1)
+    |> Enum.filter(&(&1.cost > @min_cost))
+    |> Enum.sort_by(& &1.cost, :desc)
+    |> Enum.take(10)
+    |> Enum.map(fn r ->
+      short = String.slice(r.session_id, 0, 8)
+      project = r.project_slug || "unknown"
 
-    case rows do
-      [] ->
-        []
-
-      sessions ->
-        body =
-          sessions
-          |> Enum.map(fn r ->
-            "  - #{String.slice(r.session_id, 0, 8)}… (#{r.project_slug}): " <>
-              "$#{Float.round(r.cost, 2)}"
-          end)
-          |> Enum.join("\n")
-
-        [
-          %{
-            key: @key,
-            category: "cost-spike",
-            title: "Most expensive recent sessions",
-            body: "Take a look at these and see what drove the cost:\n#{body}",
-            severity: :info
-          }
-        ]
-    end
+      %{
+        key: "cost-spike:#{r.session_id}",
+        category: "cost-spike",
+        title: "Expensive session in #{project}",
+        body:
+          "Session #{short}... cost $#{Float.round(r.cost, 2)}. " <>
+            "Take a look at what drove the cost in this session.",
+        scope: r.session_id,
+        severity: :info
+      }
+    end)
   end
 
   defp with_cost(row) do

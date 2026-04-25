@@ -11,15 +11,19 @@ defmodule TokenDashexWeb.TipsLiveTest do
   end
 
   test "renders cache discipline warning and dismiss flow", %{conn: conn} do
+    project = "test-project"
+
     AnalyticsFixtures.insert_message(
-      cache_creation_tokens: 1_000,
-      cache_read_tokens: 100
+      project_slug: project,
+      cache_creation_tokens: 200_000,
+      cache_read_tokens: 10_000
     )
 
     {:ok, view, html} = live(conn, "/tips")
-    assert html =~ "Cache hit rate"
+    assert html =~ "cache hit rate"
 
-    html = render_click(view, "dismiss", %{"key" => "cache_discipline"})
-    refute html =~ "Cache hit rate"
+    key = "cache:#{project}"
+    html = render_click(view, "dismiss", %{"key" => key})
+    refute html =~ "cache hit rate"
   end
 end

@@ -57,21 +57,36 @@ defmodule TokenDashexWeb.TipsLive do
   defp tip_card(assigns) do
     ~H"""
     <article class="card bg-base-100 border border-base-300">
-      <div class="card-body p-4 flex-row items-start gap-4">
-        <div class="flex-1 min-w-0">
-          <div class="flex items-baseline gap-2 flex-wrap">
-            <span class="badge badge-sm font-mono text-xs">{@tip[:category] || "tip"}</span>
-            <h3 class="font-semibold break-words">{@tip.title}</h3>
+      <div class="card-body p-4">
+        <div class="flex items-start gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class={[
+                "badge badge-sm font-mono text-xs",
+                @tip[:severity] == :warning && "badge-warning",
+                @tip[:severity] != :warning && "badge-ghost"
+              ]}>
+                {@tip[:category] || "tip"}
+              </span>
+              <span
+                :if={@tip[:scope]}
+                class="font-mono text-xs opacity-60 truncate max-w-xs"
+                title={@tip[:scope]}
+              >
+                {@tip[:scope]}
+              </span>
+            </div>
+            <h3 class="font-semibold">{@tip.title}</h3>
+            <p class="text-sm opacity-80 mt-1">{@tip.body}</p>
           </div>
-          <p class="whitespace-pre-wrap text-sm opacity-80 mt-1">{@tip.body}</p>
+          <button
+            phx-click="dismiss"
+            phx-value-key={@tip.key}
+            class="btn btn-sm btn-ghost font-mono shrink-0"
+          >
+            dismiss
+          </button>
         </div>
-        <button
-          phx-click="dismiss"
-          phx-value-key={@tip.key}
-          class="btn btn-sm btn-ghost font-mono"
-        >
-          dismiss
-        </button>
       </div>
     </article>
     """
