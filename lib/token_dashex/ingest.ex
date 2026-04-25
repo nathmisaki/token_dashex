@@ -39,6 +39,7 @@ defmodule TokenDashex.Ingest do
       cache_read_tokens: rec.usage["cache_read_input_tokens"] || 0,
       prompt_text: rec.prompt_text,
       response_text: rec.response_text,
+      cwd: rec[:cwd],
       timestamp: ensure_usec(rec.timestamp)
     }
 

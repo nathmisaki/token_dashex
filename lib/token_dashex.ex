@@ -20,6 +20,7 @@ defmodule TokenDashex do
       Ingest,
       Paths,
       Pricing,
+      ProjectName,
       Pricing.Plan,
       PubSubTopics,
       Release,

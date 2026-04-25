@@ -5,12 +5,14 @@ defmodule TokenDashex.Analytics.Sessions do
 
   import Ecto.Query
 
+  alias TokenDashex.ProjectName
   alias TokenDashex.Repo
   alias TokenDashex.Schema.{Message, Tool}
 
   @type session_row :: %{
           session_id: String.t(),
           project_slug: String.t(),
+          project_name: String.t(),
           input: non_neg_integer(),
           output: non_neg_integer(),
           cache_create: non_neg_integer(),
@@ -33,6 +35,7 @@ defmodule TokenDashex.Analytics.Sessions do
         select: %{
           session_id: m.session_id,
           project_slug: m.project_slug,
+          cwd: max(m.cwd),
           input: coalesce(sum(m.input_tokens), 0),
           output: coalesce(sum(m.output_tokens), 0),
           cache_create: coalesce(sum(m.cache_creation_tokens), 0),
@@ -47,6 +50,11 @@ defmodule TokenDashex.Analytics.Sessions do
     |> filter_since(since)
     |> limit(^limit)
     |> Repo.all()
+    |> Enum.map(fn row ->
+      row
+      |> Map.put(:project_name, ProjectName.for_cwd(row.cwd, row.project_slug))
+      |> Map.delete(:cwd)
+    end)
   end
 
   defp filter_project(query, nil), do: query

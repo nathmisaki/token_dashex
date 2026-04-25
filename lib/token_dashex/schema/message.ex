@@ -26,13 +26,14 @@ defmodule TokenDashex.Schema.Message do
     field :cache_read_tokens, :integer, default: 0
     field :prompt_text, :string
     field :response_text, :string
+    field :cwd, :string
     field :timestamp, :utc_datetime_usec
 
     has_many :tools, TokenDashex.Schema.Tool, foreign_key: :message_id
   end
 
   @required ~w(id session_id message_id project_slug role timestamp)a
-  @optional ~w(model input_tokens output_tokens cache_creation_tokens cache_creation_5m_tokens cache_creation_1h_tokens cache_read_tokens prompt_text response_text)a
+  @optional ~w(model input_tokens output_tokens cache_creation_tokens cache_creation_5m_tokens cache_creation_1h_tokens cache_read_tokens prompt_text response_text cwd)a
   @valid_roles ~w(user assistant system)
 
   def changeset(struct, params) do

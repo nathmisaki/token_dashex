@@ -318,7 +318,9 @@ defmodule TokenDashexWeb.OverviewLive do
             <tr :for={s <- @sessions}>
               <td class="font-mono text-xs whitespace-nowrap">{Format.date(s.last_at)}</td>
               <td>
-                <.link navigate={~p"/sessions/#{s.session_id}"}>{s.project_slug}</.link>
+                <.link navigate={~p"/sessions/#{s.session_id}"}>
+                  {s[:project_name] || s.project_slug}
+                </.link>
               </td>
               <td class="text-right">{Format.compact(s.input + s.output)}</td>
             </tr>
@@ -405,10 +407,7 @@ defmodule TokenDashexWeb.OverviewLive do
       |> Enum.sort_by(&(-(&1.input + &1.output)))
 
     cats =
-      Enum.map(sorted, fn p ->
-        slug = project_short(p.project_slug)
-        if String.length(slug) > 20, do: String.slice(slug, 0, 19) <> "…", else: slug
-      end)
+      Enum.map(sorted, &truncate_label(&1.project_name || project_short(&1.project_slug), 20))
 
     %{
       tooltip: %{trigger: "axis", axisPointer: %{type: "shadow"}},
@@ -443,6 +442,12 @@ defmodule TokenDashexWeb.OverviewLive do
     |> String.split(["/", "-"], trim: true)
     |> List.last()
     |> Kernel.||(slug)
+  end
+
+  defp truncate_label(nil, _max), do: ""
+
+  defp truncate_label(str, max) when is_binary(str) do
+    if String.length(str) > max, do: String.slice(str, 0, max - 1) <> "…", else: str
   end
 
   defp model_option(by_model) do
@@ -483,17 +488,25 @@ defmodule TokenDashexWeb.OverviewLive do
   end
 
   defp tools_option(tools) do
-    cats = Enum.map(tools, & &1.name)
+    cats = Enum.map(tools, &truncate_label(&1.name, 20))
+
+    data =
+      Enum.map(tools, fn t ->
+        %{value: t.invocations, name: t.name}
+      end)
 
     %{
-      tooltip: %{trigger: "axis", axisPointer: %{type: "shadow"}},
+      tooltip: %{
+        trigger: "item",
+        formatter: "{b}<br/><b>{c}</b> calls"
+      },
       grid: %{left: 36, right: 12, top: 28, bottom: 40, containLabel: true},
       xAxis: %{type: "category", data: cats, axisLabel: %{rotate: 25, interval: 0}},
       yAxis: %{type: "value"},
       series: [
         %{
           type: "bar",
-          data: Enum.map(tools, & &1.invocations),
+          data: data,
           itemStyle: %{color: @purple, borderRadius: [4, 4, 0, 0]},
           barMaxWidth: 32
         }
