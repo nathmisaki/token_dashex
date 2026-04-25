@@ -36,7 +36,7 @@ jobs:
       MIX_ENV: prod
       ELIXIR_VERSION: "1.19.4"
       OTP_VERSION: "28.0"
-      ZIG_VERSION: "0.13.0"
+      ZIG_VERSION: "0.15.2"
       # exqlite + cc_precompiler resolve NIFs against the host triple
       # unless overridden. We force the target triple so the bundled NIF
       # matches the platform Burrito is wrapping.
