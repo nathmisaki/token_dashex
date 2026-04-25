@@ -74,13 +74,15 @@ defmodule TokenDashex.Analytics.Prompts do
   end
 
   defp add_cost(row) do
+    # Matches Python: estimated_cost_usd = cache read cost only, not full prompt cost.
+    # input/output are 0 so the column reflects cache savings, not total spend.
     cost =
       Pricing.cost_for(row.model, %{
-        "input_tokens" => row.input_tokens,
-        "output_tokens" => row.output_tokens,
-        "cache_creation_input_tokens" => row.cache_creation_total,
-        "cache_creation_5m_input_tokens" => row.cache_creation_5m,
-        "cache_creation_1h_input_tokens" => row.cache_creation_1h,
+        "input_tokens" => 0,
+        "output_tokens" => 0,
+        "cache_creation_input_tokens" => 0,
+        "cache_creation_5m_input_tokens" => 0,
+        "cache_creation_1h_input_tokens" => 0,
         "cache_read_input_tokens" => row.cache_read_tokens
       })
 
