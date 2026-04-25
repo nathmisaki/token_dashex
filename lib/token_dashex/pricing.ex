@@ -35,23 +35,34 @@ defmodule TokenDashex.Pricing do
   Returns the USD cost for a single message's `usage` map.
 
   `usage` is the `message.usage` payload Claude Code writes to JSONL —
-  `input_tokens`, `output_tokens`, `cache_creation_input_tokens`,
-  `cache_read_input_tokens`. Unknown models fall through to the tier
-  fallback table (opus/sonnet/haiku) inferred from the model id.
+  `input_tokens`, `output_tokens`, `cache_creation_input_tokens`
+  (or the split `cache_creation_5m_input_tokens` /
+  `cache_creation_1h_input_tokens`), and `cache_read_input_tokens`.
+
+  Unknown models fall through to the tier fallback table
+  (opus/sonnet/haiku) inferred from the model id.
   """
   @spec cost_for(String.t() | nil, map()) :: float()
   def cost_for(model, %{} = usage) do
     rate = rate_for(model)
+    {tokens_5m, tokens_1h} = cache_create_tokens(usage)
 
-    rate_in = rate["input"] || 0.0
-    rate_out = rate["output"] || 0.0
-    rate_cache_read = rate["cache_read"] || 0.0
-    rate_cache_create = rate["cache_create_5m"] || rate["cache_create"] || 0.0
+    Map.get(usage, "input_tokens", 0) * (rate["input"] || 0.0) / 1_000_000 +
+      Map.get(usage, "output_tokens", 0) * (rate["output"] || 0.0) / 1_000_000 +
+      tokens_5m * rate_create_5m(rate) / 1_000_000 +
+      tokens_1h * rate_create_1h(rate) / 1_000_000 +
+      Map.get(usage, "cache_read_input_tokens", 0) * (rate["cache_read"] || 0.0) / 1_000_000
+  end
 
-    Map.get(usage, "input_tokens", 0) * rate_in / 1_000_000 +
-      Map.get(usage, "output_tokens", 0) * rate_out / 1_000_000 +
-      Map.get(usage, "cache_creation_input_tokens", 0) * rate_cache_create / 1_000_000 +
-      Map.get(usage, "cache_read_input_tokens", 0) * rate_cache_read / 1_000_000
+  defp rate_create_5m(rate), do: rate["cache_create_5m"] || rate["cache_create"] || 0.0
+  defp rate_create_1h(rate), do: rate["cache_create_1h"] || rate_create_5m(rate)
+
+  defp cache_create_tokens(usage) do
+    case {Map.get(usage, "cache_creation_5m_input_tokens"),
+          Map.get(usage, "cache_creation_1h_input_tokens")} do
+      {nil, nil} -> {Map.get(usage, "cache_creation_input_tokens", 0), 0}
+      {a, b} -> {a || 0, b || 0}
+    end
   end
 
   defp rate_for(nil), do: %{}

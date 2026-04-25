@@ -48,6 +48,8 @@ defmodule TokenDashex.Analytics.Daily do
           input: coalesce(sum(m.input_tokens), 0),
           output: coalesce(sum(m.output_tokens), 0),
           cache_create: coalesce(sum(m.cache_creation_tokens), 0),
+          cache_create_5m: coalesce(sum(m.cache_creation_5m_tokens), 0),
+          cache_create_1h: coalesce(sum(m.cache_creation_1h_tokens), 0),
           cache_read: coalesce(sum(m.cache_read_tokens), 0)
         }
       )
@@ -64,6 +66,8 @@ defmodule TokenDashex.Analytics.Daily do
               "input_tokens" => r.input,
               "output_tokens" => r.output,
               "cache_creation_input_tokens" => r.cache_create,
+              "cache_creation_5m_input_tokens" => r.cache_create_5m,
+              "cache_creation_1h_input_tokens" => r.cache_create_1h,
               "cache_read_input_tokens" => r.cache_read
             })
         end)

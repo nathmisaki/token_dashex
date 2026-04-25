@@ -14,6 +14,8 @@ defmodule TokenDashex.Analytics.ByModel do
           input: non_neg_integer(),
           output: non_neg_integer(),
           cache_create: non_neg_integer(),
+          cache_create_5m: non_neg_integer(),
+          cache_create_1h: non_neg_integer(),
           cache_read: non_neg_integer(),
           cost: float()
         }
@@ -31,6 +33,8 @@ defmodule TokenDashex.Analytics.ByModel do
         input: coalesce(sum(m.input_tokens), 0),
         output: coalesce(sum(m.output_tokens), 0),
         cache_create: coalesce(sum(m.cache_creation_tokens), 0),
+        cache_create_5m: coalesce(sum(m.cache_creation_5m_tokens), 0),
+        cache_create_1h: coalesce(sum(m.cache_creation_1h_tokens), 0),
         cache_read: coalesce(sum(m.cache_read_tokens), 0)
       }
     )
@@ -44,6 +48,8 @@ defmodule TokenDashex.Analytics.ByModel do
           "input_tokens" => row.input,
           "output_tokens" => row.output,
           "cache_creation_input_tokens" => row.cache_create,
+          "cache_creation_5m_input_tokens" => row.cache_create_5m,
+          "cache_creation_1h_input_tokens" => row.cache_create_1h,
           "cache_read_input_tokens" => row.cache_read
         })
       )

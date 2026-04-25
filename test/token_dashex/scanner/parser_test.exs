@@ -52,6 +52,56 @@ defmodule TokenDashex.Scanner.ParserTest do
     assert :skip = Parser.parse_record(%{"type" => "permission-mode"}, "demo")
   end
 
+  test "splits cache_creation into 5m / 1h buckets" do
+    rec = %{
+      "type" => "assistant",
+      "uuid" => "u-1",
+      "sessionId" => "s-1",
+      "timestamp" => "2026-04-24T21:00:00Z",
+      "message" => %{
+        "id" => "m-1",
+        "model" => "claude-sonnet-4-6",
+        "content" => [],
+        "usage" => %{
+          "input_tokens" => 10,
+          "output_tokens" => 20,
+          "cache_creation_input_tokens" => 1_000,
+          "cache_creation" => %{
+            "ephemeral_5m_input_tokens" => 800,
+            "ephemeral_1h_input_tokens" => 200
+          }
+        }
+      }
+    }
+
+    assert {:ok, parsed} = Parser.parse_record(rec, "demo")
+    assert parsed.usage["cache_creation_5m_input_tokens"] == 800
+    assert parsed.usage["cache_creation_1h_input_tokens"] == 200
+  end
+
+  test "falls back to flat cache_creation_input_tokens when only flat field present" do
+    rec = %{
+      "type" => "assistant",
+      "uuid" => "u-2",
+      "sessionId" => "s-2",
+      "timestamp" => "2026-04-24T21:00:00Z",
+      "message" => %{
+        "id" => "m-2",
+        "model" => "claude-sonnet-4-6",
+        "content" => [],
+        "usage" => %{
+          "input_tokens" => 10,
+          "output_tokens" => 20,
+          "cache_creation_input_tokens" => 500
+        }
+      }
+    }
+
+    assert {:ok, parsed} = Parser.parse_record(rec, "demo")
+    assert parsed.usage["cache_creation_5m_input_tokens"] == 500
+    assert parsed.usage["cache_creation_1h_input_tokens"] == 0
+  end
+
   test "tolerates missing timestamp" do
     rec = %{
       "type" => "user",

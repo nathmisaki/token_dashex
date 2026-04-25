@@ -400,9 +400,13 @@ defmodule TokenDashexWeb.OverviewLive do
   end
 
   defp projects_option(projects) do
+    sorted =
+      projects
+      |> Enum.sort_by(&(-(&1.input + &1.output)))
+
     cats =
-      Enum.map(projects, fn p ->
-        slug = p.project_slug || ""
+      Enum.map(sorted, fn p ->
+        slug = project_short(p.project_slug)
         if String.length(slug) > 20, do: String.slice(slug, 0, 19) <> "…", else: slug
       end)
 
@@ -416,20 +420,29 @@ defmodule TokenDashexWeb.OverviewLive do
         %{
           name: "input",
           type: "bar",
-          data: Enum.map(projects, & &1.input),
+          data: Enum.map(sorted, & &1.input),
           itemStyle: %{color: @blue, borderRadius: [4, 4, 0, 0]},
           barMaxWidth: 24
         },
         %{
           name: "output",
           type: "bar",
-          data: Enum.map(projects, & &1.output),
+          data: Enum.map(sorted, & &1.output),
           itemStyle: %{color: @purple, borderRadius: [4, 4, 0, 0]},
           barMaxWidth: 24
         }
       ]
     }
     |> Jason.encode!()
+  end
+
+  defp project_short(nil), do: ""
+
+  defp project_short(slug) do
+    slug
+    |> String.split(["/", "-"], trim: true)
+    |> List.last()
+    |> Kernel.||(slug)
   end
 
   defp model_option(by_model) do
@@ -442,7 +455,10 @@ defmodule TokenDashexWeb.OverviewLive do
       |> Enum.filter(&(&1.value > 0))
 
     %{
-      tooltip: %{trigger: "item"},
+      tooltip: %{
+        trigger: "item",
+        formatter: "{b}<br/><b>{c}</b> tokens ({d}%)"
+      },
       legend: %{bottom: 10, type: "scroll"},
       series: [
         %{
@@ -451,7 +467,13 @@ defmodule TokenDashexWeb.OverviewLive do
           radius: ["48%", "68%"],
           padAngle: 2,
           itemStyle: %{borderColor: "#0F1419", borderWidth: 2, borderRadius: 4},
-          label: %{show: true, position: "inside", color: "#fff", fontWeight: 600},
+          label: %{
+            show: true,
+            position: "inside",
+            color: "#fff",
+            fontWeight: 600,
+            formatter: "{d}%"
+          },
           labelLine: %{show: false},
           data: data
         }
