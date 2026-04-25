@@ -22,30 +22,38 @@ defmodule TokenDashexWeb.ProjectsLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} active={:projects}>
-      <h1 class="text-2xl font-bold">Projects</h1>
+      <div class="mb-4">
+        <h1 class="text-2xl font-bold">Projects</h1>
+        <p class="text-sm opacity-60 mt-1">
+          Sorted by billable token spend. Cache reads are billed cheaper, so high cache-read columns are good.
+        </p>
+      </div>
 
       <Layouts.empty_state :if={@rows == []} title="No projects yet">
         Projects appear once Claude Code records sessions in <code class="badge">~/.claude/projects/</code>.
       </Layouts.empty_state>
 
-      <div :if={@rows != []} class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <article :for={row <- @rows} class="card bg-base-200 shadow">
-          <div class="card-body">
-            <h2 class="card-title break-all">{row.project_slug}</h2>
-            <dl class="grid grid-cols-2 gap-x-2 gap-y-1 text-sm mt-2">
-              <dt class="opacity-70">Sessions</dt>
-              <dd class="text-right">{row.sessions}</dd>
-              <dt class="opacity-70">Input</dt>
-              <dd class="text-right">{Format.tokens(row.input)}</dd>
-              <dt class="opacity-70">Output</dt>
-              <dd class="text-right">{Format.tokens(row.output)}</dd>
-              <dt class="opacity-70">Cache read</dt>
-              <dd class="text-right">{Format.tokens(row.cache_read)}</dd>
-              <dt class="opacity-70">Last activity</dt>
-              <dd class="text-right text-xs">{Format.date(row.last_at)}</dd>
-            </dl>
-          </div>
-        </article>
+      <div :if={@rows != []} class="card bg-base-200 shadow overflow-x-auto">
+        <table class="table table-sm w-full">
+          <thead>
+            <tr>
+              <th>PROJECT</th>
+              <th class="text-right">SESSIONS</th>
+              <th class="text-right">TURNS</th>
+              <th class="text-right">BILLABLE TOKENS</th>
+              <th class="text-right">CACHE READS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={row <- @rows} class="hover">
+              <td class="font-medium">{row.project_name}</td>
+              <td class="text-right">{row.sessions}</td>
+              <td class="text-right">{row.turns}</td>
+              <td class="text-right">{Format.compact(row.input + row.output + row.cache_create)}</td>
+              <td class="text-right">{Format.compact(row.cache_read)}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </Layouts.app>
     """

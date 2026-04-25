@@ -17,6 +17,7 @@ defmodule TokenDashex.Analytics.Projects do
           cache_create: non_neg_integer(),
           cache_read: non_neg_integer(),
           sessions: non_neg_integer(),
+          turns: non_neg_integer(),
           last_at: DateTime.t() | nil
         }
 
@@ -35,6 +36,7 @@ defmodule TokenDashex.Analytics.Projects do
         cache_create: coalesce(sum(m.cache_creation_tokens), 0),
         cache_read: coalesce(sum(m.cache_read_tokens), 0),
         sessions: count(fragment("DISTINCT ?", m.session_id)),
+        turns: filter(count(m.id), fragment("? = 'user'", m.role)),
         last_at: max(m.timestamp)
       }
     )
@@ -45,7 +47,7 @@ defmodule TokenDashex.Analytics.Projects do
       Map.put(row, :project_name, ProjectName.best(cwds, row.project_slug))
     end)
     |> merge_by_project_name()
-    |> Enum.sort_by(& &1.last_at, {:desc, DateTime})
+    |> Enum.sort_by(&(&1.input + &1.output + &1.cache_create), :desc)
   end
 
   # Different slugs can resolve to the same human-readable project_name
@@ -57,7 +59,16 @@ defmodule TokenDashex.Analytics.Projects do
     |> Enum.map(fn {_name, [first | _] = group} ->
       Enum.reduce(
         group,
-        %{first | sessions: 0, input: 0, output: 0, cache_create: 0, cache_read: 0, last_at: nil},
+        %{
+          first
+          | sessions: 0,
+            input: 0,
+            output: 0,
+            cache_create: 0,
+            cache_read: 0,
+            turns: 0,
+            last_at: nil
+        },
         fn r, acc ->
           %{
             acc
@@ -66,6 +77,7 @@ defmodule TokenDashex.Analytics.Projects do
               cache_create: acc.cache_create + r.cache_create,
               cache_read: acc.cache_read + r.cache_read,
               sessions: acc.sessions + r.sessions,
+              turns: acc.turns + r.turns,
               last_at: max_datetime(acc.last_at, r.last_at)
           }
         end
