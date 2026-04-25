@@ -110,7 +110,12 @@ defmodule TokenDashexWeb.PromptsLive do
         </table>
       </div>
 
-      <div :if={@selected} id="prompt-drawer" phx-hook="ScrollIntoView" class="card bg-base-200 shadow">
+      <div
+        :if={@selected}
+        id="prompt-drawer"
+        phx-hook="ScrollIntoView"
+        class="card bg-base-200 shadow"
+      >
         <div class="card-body">
           <div class="flex items-center justify-between">
             <h3 class="card-title text-base">Prompt detail</h3>

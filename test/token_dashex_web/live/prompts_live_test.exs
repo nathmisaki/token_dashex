@@ -6,12 +6,13 @@ defmodule TokenDashexWeb.PromptsLiveTest do
   alias TokenDashex.AnalyticsFixtures
 
   setup do
-    user1 = AnalyticsFixtures.insert_message(
-      session_id: "shared",
-      role: "user",
-      uuid: "u1",
-      prompt_text: "First prompt body"
-    )
+    user1 =
+      AnalyticsFixtures.insert_message(
+        session_id: "shared",
+        role: "user",
+        uuid: "u1",
+        prompt_text: "First prompt body"
+      )
 
     AnalyticsFixtures.insert_message(
       session_id: "shared",
@@ -21,12 +22,13 @@ defmodule TokenDashexWeb.PromptsLiveTest do
       output_tokens: 800
     )
 
-    user2 = AnalyticsFixtures.insert_message(
-      session_id: "other",
-      role: "user",
-      uuid: "u2",
-      prompt_text: "Quieter prompt"
-    )
+    user2 =
+      AnalyticsFixtures.insert_message(
+        session_id: "other",
+        role: "user",
+        uuid: "u2",
+        prompt_text: "Quieter prompt"
+      )
 
     AnalyticsFixtures.insert_message(
       session_id: "other",
