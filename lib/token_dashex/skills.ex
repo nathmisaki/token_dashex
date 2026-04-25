@@ -22,25 +22,45 @@ defmodule TokenDashex.Skills do
     |> Enum.uniq_by(& &1.slug)
   end
 
-  @spec usage_breakdown() :: [%{slug: String.t(), invocations: integer(), est_tokens: integer()}]
-  def usage_breakdown do
+  @spec usage_breakdown(map()) :: [
+          %{
+            slug: String.t(),
+            invocations: integer(),
+            est_tokens: integer(),
+            sessions: integer(),
+            last_at: DateTime.t() | nil
+          }
+        ]
+  def usage_breakdown(opts \\ %{}) do
+    since = Map.get(opts, :since)
     catalog_entries = catalog()
 
-    counts =
+    base =
       from(m in Message,
         where: not is_nil(m.prompt_text) or not is_nil(m.response_text),
-        select: %{prompt: m.prompt_text, response: m.response_text}
+        select: %{
+          prompt: m.prompt_text,
+          response: m.response_text,
+          session_id: m.session_id,
+          timestamp: m.timestamp
+        }
       )
+
+    messages =
+      if(since, do: from(m in base, where: m.timestamp >= ^since), else: base)
       |> Repo.all()
-      |> count_invocations(catalog_entries)
+
+    counts = count_invocations(messages, catalog_entries)
 
     Enum.map(catalog_entries, fn entry ->
-      invocations = Map.get(counts, entry.slug, 0)
+      {invocations, session_ids, last_at} = Map.get(counts, entry.slug, {0, MapSet.new(), nil})
 
       %{
         slug: entry.slug,
+        est_tokens: entry.est_tokens,
         invocations: invocations,
-        est_tokens: entry.est_tokens * invocations
+        sessions: MapSet.size(session_ids),
+        last_at: last_at
       }
     end)
     |> Enum.sort_by(& &1.invocations, :desc)
@@ -81,12 +101,18 @@ defmodule TokenDashex.Skills do
   defp count_invocations(messages, catalog_entries) do
     slugs = Enum.map(catalog_entries, & &1.slug)
 
-    Enum.reduce(messages, %{}, fn %{prompt: prompt, response: response}, acc ->
-      text = (prompt || "") <> "\n" <> (response || "")
+    Enum.reduce(messages, %{}, fn %{prompt: p, response: r, session_id: sid, timestamp: ts},
+                                  acc ->
+      text = (p || "") <> "\n" <> (r || "")
 
       Enum.reduce(slugs, acc, fn slug, inner ->
         if String.contains?(text, slug) do
-          Map.update(inner, slug, 1, &(&1 + 1))
+          {inv, sessions, last_at} = Map.get(inner, slug, {0, MapSet.new(), nil})
+
+          new_last =
+            if is_nil(last_at) or DateTime.compare(ts, last_at) == :gt, do: ts, else: last_at
+
+          Map.put(inner, slug, {inv + 1, MapSet.put(sessions, sid), new_last})
         else
           inner
         end
