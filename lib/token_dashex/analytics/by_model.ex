@@ -18,8 +18,10 @@ defmodule TokenDashex.Analytics.ByModel do
           cost: float()
         }
 
-  @spec breakdown() :: [row]
-  def breakdown do
+  @spec breakdown(keyword()) :: [row]
+  def breakdown(opts \\ []) do
+    since = Keyword.get(opts, :since)
+
     from(m in Message,
       where: not is_nil(m.model),
       group_by: m.model,
@@ -32,6 +34,7 @@ defmodule TokenDashex.Analytics.ByModel do
         cache_read: coalesce(sum(m.cache_read_tokens), 0)
       }
     )
+    |> apply_since(since)
     |> Repo.all()
     |> Enum.map(fn row ->
       Map.put(
@@ -46,4 +49,7 @@ defmodule TokenDashex.Analytics.ByModel do
       )
     end)
   end
+
+  defp apply_since(query, nil), do: query
+  defp apply_since(query, %DateTime{} = dt), do: from(m in query, where: m.timestamp >= ^dt)
 end

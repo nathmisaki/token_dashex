@@ -18,8 +18,10 @@ defmodule TokenDashex.Analytics.Projects do
           last_at: DateTime.t() | nil
         }
 
-  @spec summary() :: [row]
-  def summary do
+  @spec summary(keyword()) :: [row]
+  def summary(opts \\ []) do
+    since = Keyword.get(opts, :since)
+
     from(m in Message,
       group_by: m.project_slug,
       order_by: [desc: max(m.timestamp)],
@@ -33,6 +35,10 @@ defmodule TokenDashex.Analytics.Projects do
         last_at: max(m.timestamp)
       }
     )
+    |> apply_since(since)
     |> Repo.all()
   end
+
+  defp apply_since(query, nil), do: query
+  defp apply_since(query, %DateTime{} = dt), do: from(m in query, where: m.timestamp >= ^dt)
 end

@@ -24,6 +24,7 @@ defmodule TokenDashex.Analytics.Sessions do
   def recent(opts \\ %{}) do
     limit = Map.get(opts, :limit, 50)
     project = Map.get(opts, :project_slug)
+    since = Map.get(opts, :since)
 
     base =
       from m in Message,
@@ -43,6 +44,7 @@ defmodule TokenDashex.Analytics.Sessions do
 
     base
     |> filter_project(project)
+    |> filter_since(since)
     |> limit(^limit)
     |> Repo.all()
   end
@@ -51,6 +53,11 @@ defmodule TokenDashex.Analytics.Sessions do
 
   defp filter_project(query, slug),
     do: from(m in query, where: m.project_slug == ^slug)
+
+  defp filter_since(query, nil), do: query
+
+  defp filter_since(query, %DateTime{} = dt),
+    do: from(m in query, where: m.timestamp >= ^dt)
 
   @spec turns(String.t()) :: [Message.t()]
   def turns(session_id) do

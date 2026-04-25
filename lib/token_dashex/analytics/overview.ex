@@ -1,8 +1,10 @@
 defmodule TokenDashex.Analytics.Overview do
   @moduledoc """
   Aggregates the headline numbers shown on the dashboard's Overview tab:
-  total tokens by class, distinct session and project counts, broken into
-  all-time / today / last-7-days windows.
+  total tokens by class, distinct session and project counts, plus cost.
+
+  `totals/0` keeps the legacy three-window view (all time / today / last 7d).
+  `window/1` returns a single window scoped by `since:` (DateTime or `nil`).
   """
 
   import Ecto.Query
@@ -16,6 +18,7 @@ defmodule TokenDashex.Analytics.Overview do
           output: non_neg_integer(),
           cache_create: non_neg_integer(),
           cache_read: non_neg_integer(),
+          turns: non_neg_integer(),
           sessions: non_neg_integer(),
           projects: non_neg_integer(),
           cost: float()
@@ -35,6 +38,13 @@ defmodule TokenDashex.Analytics.Overview do
     }
   end
 
+  @spec window(keyword()) :: window()
+  def window(opts \\ []) do
+    since = Keyword.get(opts, :since)
+    filter = if since, do: {:since, since}, else: nil
+    window_query(filter)
+  end
+
   defp window_query(filter) do
     base =
       from m in Message,
@@ -43,6 +53,7 @@ defmodule TokenDashex.Analytics.Overview do
           output: coalesce(sum(m.output_tokens), 0),
           cache_create: coalesce(sum(m.cache_creation_tokens), 0),
           cache_read: coalesce(sum(m.cache_read_tokens), 0),
+          turns: count(m.id),
           sessions: count(fragment("DISTINCT ?", m.session_id)),
           projects: count(fragment("DISTINCT ?", m.project_slug))
         }
@@ -61,6 +72,10 @@ defmodule TokenDashex.Analytics.Overview do
 
   defp apply_filter(query, {:gte, %Date{} = day}) do
     from m in query, where: fragment("date(?)", m.timestamp) >= ^Date.to_iso8601(day)
+  end
+
+  defp apply_filter(query, {:since, %DateTime{} = dt}) do
+    from m in query, where: m.timestamp >= ^dt
   end
 
   defp total_cost(filter) do
