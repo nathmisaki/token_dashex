@@ -23,7 +23,6 @@ defmodule TokenDashex.Analytics.Projects do
   @spec summary(keyword()) :: [row]
   def summary(opts \\ []) do
     since = Keyword.get(opts, :since)
-
     slug_to_cwds = cwds_by_slug()
 
     from(m in Message,
@@ -45,6 +44,43 @@ defmodule TokenDashex.Analytics.Projects do
       cwds = Map.get(slug_to_cwds, row.project_slug, [])
       Map.put(row, :project_name, ProjectName.best(cwds, row.project_slug))
     end)
+    |> merge_by_project_name()
+    |> Enum.sort_by(& &1.last_at, {:desc, DateTime})
+  end
+
+  # Different slugs can resolve to the same human-readable project_name
+  # (e.g. when the project has been opened from two cwds). Fold those rows
+  # together so the overview doesn't list the same project twice.
+  defp merge_by_project_name(rows) do
+    rows
+    |> Enum.group_by(& &1.project_name)
+    |> Enum.map(fn {_name, [first | _] = group} ->
+      Enum.reduce(
+        group,
+        %{first | sessions: 0, input: 0, output: 0, cache_create: 0, cache_read: 0, last_at: nil},
+        fn r, acc ->
+          %{
+            acc
+            | input: acc.input + r.input,
+              output: acc.output + r.output,
+              cache_create: acc.cache_create + r.cache_create,
+              cache_read: acc.cache_read + r.cache_read,
+              sessions: acc.sessions + r.sessions,
+              last_at: max_datetime(acc.last_at, r.last_at)
+          }
+        end
+      )
+    end)
+  end
+
+  defp max_datetime(nil, b), do: b
+  defp max_datetime(a, nil), do: a
+
+  defp max_datetime(a, b) do
+    case DateTime.compare(a, b) do
+      :lt -> b
+      _ -> a
+    end
   end
 
   defp cwds_by_slug do
