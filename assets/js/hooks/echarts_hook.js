@@ -9,7 +9,7 @@ import * as echarts from "../../vendor/echarts.min.js"
 
 const ECharts = {
   mounted() {
-    this.chart = echarts.init(this.el, null, { renderer: "canvas" })
+    this.initChart()
     this.lastOption = null
     this.render()
 
@@ -18,6 +18,14 @@ const ECharts = {
   },
 
   updated() {
+    // LiveView morph-sync can wipe the <canvas>/<svg> ECharts appended on
+    // mount because the server-rendered element has no children. Detect
+    // that and re-init the chart in place so updates don't blank the UI.
+    if (!this.el.querySelector("canvas, svg")) {
+      if (this.chart) this.chart.dispose()
+      this.initChart()
+      this.lastOption = null
+    }
     this.render()
   },
 
@@ -29,6 +37,10 @@ const ECharts = {
       this.chart.dispose()
       this.chart = null
     }
+  },
+
+  initChart() {
+    this.chart = echarts.init(this.el, null, { renderer: "canvas" })
   },
 
   render() {
