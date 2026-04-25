@@ -16,12 +16,21 @@ defmodule TokenDashex.Scanner.Parser do
           parent_uuid: String.t() | nil,
           project_slug: String.t() | nil,
           cwd: String.t() | nil,
+          is_sidechain: boolean(),
+          agent_id: String.t() | nil,
           model: String.t() | nil,
           timestamp: DateTime.t(),
           usage: map(),
           prompt_text: String.t() | nil,
           response_text: String.t() | nil,
-          tools: [%{name: String.t(), input_tokens: integer(), output_tokens: integer()}]
+          tools: [
+            %{
+              name: String.t(),
+              target: String.t() | nil,
+              input_tokens: integer(),
+              output_tokens: integer()
+            }
+          ]
         }
 
   @spec parse_record(map(), String.t() | nil) :: {:ok, parsed} | :skip
@@ -37,6 +46,8 @@ defmodule TokenDashex.Scanner.Parser do
        parent_uuid: rec["parentUuid"],
        project_slug: project_slug,
        cwd: rec["cwd"],
+       is_sidechain: rec["isSidechain"] || false,
+       agent_id: rec["agentId"],
        model: msg["model"],
        timestamp: parse_ts(rec["timestamp"]),
        usage: usage_map(msg["usage"] || %{}),
@@ -56,6 +67,8 @@ defmodule TokenDashex.Scanner.Parser do
        parent_uuid: rec["parentUuid"],
        project_slug: project_slug,
        cwd: rec["cwd"],
+       is_sidechain: rec["isSidechain"] || false,
+       agent_id: rec["agentId"],
        model: nil,
        timestamp: parse_ts(rec["timestamp"]),
        usage: %{},
@@ -117,10 +130,12 @@ defmodule TokenDashex.Scanner.Parser do
     content
     |> Enum.filter(&(&1["type"] == "tool_use"))
     |> Enum.map(fn tu ->
-      input_size = tu["input"] |> Jason.encode!() |> byte_size()
+      input = tu["input"] || %{}
+      input_size = input |> Jason.encode!() |> byte_size()
 
       %{
         name: tu["name"] || "unknown",
+        target: tool_target(tu["name"], input),
         input_tokens: div(input_size, 4),
         output_tokens: 0
       }
@@ -128,6 +143,16 @@ defmodule TokenDashex.Scanner.Parser do
   end
 
   defp tools(_), do: []
+
+  defp tool_target(name, input) when name in ["Read", "Write", "Edit", "MultiEdit"] do
+    input["file_path"] || input["path"]
+  end
+
+  defp tool_target("Bash", %{"command" => cmd}) when is_binary(cmd) do
+    cmd |> String.slice(0, 200)
+  end
+
+  defp tool_target(_, _), do: nil
 
   defp nil_if_empty(""), do: nil
   defp nil_if_empty(s), do: s

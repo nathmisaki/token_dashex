@@ -29,13 +29,15 @@ defmodule TokenDashex.Schema.Message do
     field :prompt_text, :string
     field :response_text, :string
     field :cwd, :string
+    field :is_sidechain, :boolean, default: false
+    field :agent_id, :string
     field :timestamp, :utc_datetime_usec
 
     has_many :tools, TokenDashex.Schema.Tool, foreign_key: :message_id
   end
 
   @required ~w(id session_id message_id project_slug role timestamp)a
-  @optional ~w(uuid parent_uuid model input_tokens output_tokens cache_creation_tokens cache_creation_5m_tokens cache_creation_1h_tokens cache_read_tokens prompt_text response_text cwd)a
+  @optional ~w(uuid parent_uuid model input_tokens output_tokens cache_creation_tokens cache_creation_5m_tokens cache_creation_1h_tokens cache_read_tokens prompt_text response_text cwd is_sidechain agent_id)a
   @valid_roles ~w(user assistant system)
 
   def changeset(struct, params) do

@@ -1,8 +1,7 @@
 defmodule TokenDashex.Tips.RepeatedReads do
   @moduledoc """
-  Flags sessions where the same `Read`-tool target is invoked more than five
-  times. Produces one tip per offending session (like the Python dashboard's
-  per-file tips), ordered by read count descending.
+  Flags files opened by Read/Edit/Write more than 10 times in the last 7 days
+  (grouped by target path). Mirrors Python's `repeated_target_tips` repeat-file rule.
   """
 
   @behaviour TokenDashex.Tips.Rule
@@ -12,7 +11,7 @@ defmodule TokenDashex.Tips.RepeatedReads do
   alias TokenDashex.Repo
   alias TokenDashex.Schema.Tool
 
-  @threshold 5
+  @threshold 10
 
   @impl true
   def evaluate do
@@ -20,25 +19,30 @@ defmodule TokenDashex.Tips.RepeatedReads do
 
     from(t in Tool,
       join: m in assoc(t, :message),
-      where: t.name == "Read" and m.timestamp >= ^cutoff,
-      group_by: t.session_id,
+      where:
+        t.name in ["Read", "Edit", "Write"] and not is_nil(t.target) and m.timestamp >= ^cutoff,
+      group_by: t.target,
       having: count(t.id) > @threshold,
-      select: %{session_id: t.session_id, count: count(t.id)},
+      select: %{
+        target: t.target,
+        n: count(t.id),
+        sessions: count(t.session_id, :distinct)
+      },
       order_by: [desc: count(t.id)],
       limit: 10
     )
     |> Repo.all()
-    |> Enum.map(fn %{session_id: id, count: c} ->
-      short = String.slice(id, 0, 8)
+    |> Enum.map(fn %{target: target, n: n, sessions: sessions} ->
+      short = Path.basename(target)
 
       %{
-        key: "repeat-file:#{id}",
+        key: "repeat-file:#{target}",
         category: "repeat-file",
-        title: "Session #{short}… re-reads files heavily",
+        title: "#{short} read #{n} times",
         body:
-          "This session called Read #{c} times. Reading the same context repeatedly " <>
-            "burns input tokens. Consider caching or splitting tasks across sessions.",
-        scope: id,
+          "This file was opened #{n} times across #{sessions} sessions in the past 7 days. " <>
+            "A summary in CLAUDE.md or one read per session would avoid repeats.",
+        scope: target,
         severity: :info
       }
     end)

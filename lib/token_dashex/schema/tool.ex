@@ -12,6 +12,7 @@ defmodule TokenDashex.Schema.Tool do
   schema "tools" do
     field :session_id, :string
     field :name, :string
+    field :target, :string
     field :input_tokens, :integer, default: 0
     field :output_tokens, :integer, default: 0
     field :result_tokens, :integer, default: 0
@@ -25,7 +26,7 @@ defmodule TokenDashex.Schema.Tool do
   end
 
   @required ~w(message_id session_id name)a
-  @optional ~w(input_tokens output_tokens result_tokens)a
+  @optional ~w(target input_tokens output_tokens result_tokens)a
 
   def changeset(struct, params) do
     struct

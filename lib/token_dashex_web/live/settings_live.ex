@@ -40,8 +40,7 @@ defmodule TokenDashexWeb.SettingsLive do
   end
 
   defp fmt_rate(nil), do: "—"
-  defp fmt_rate(0), do: "—"
-  defp fmt_rate(0.0), do: "—"
+  defp fmt_rate(n) when is_number(n) and n == 0, do: "—"
 
   defp fmt_rate(n) when is_number(n) do
     :erlang.float_to_binary(n / 1, [{:decimals, 2}, :compact])
