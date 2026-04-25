@@ -36,7 +36,7 @@ defmodule Mix.Tasks.Dashex.Dashboard do
   end
 
   defp port do
-    System.get_env("PORT") || "4000"
+    System.get_env("PORT") || "8081"
   end
 
   defp open_in_browser(url) do

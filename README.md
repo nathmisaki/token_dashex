@@ -17,7 +17,7 @@ mix ecto.migrate
 mix dashex.dashboard
 ```
 
-The dashboard opens at <http://127.0.0.1:4000>. The first launch may take
+The dashboard opens at <http://127.0.0.1:8081>. The first launch may take
 a few seconds to ingest existing JSONL files; subsequent launches are
 incremental.
 
@@ -41,7 +41,7 @@ _build/prod/rel/token_dashex/
 _build/prod/rel/token_dashex/bin/migrate
 _build/prod/rel/token_dashex/bin/scan
 _build/prod/rel/token_dashex/bin/stats
-_build/prod/rel/token_dashex/bin/server   # bind 127.0.0.1:4000
+_build/prod/rel/token_dashex/bin/server   # bind 127.0.0.1:8081
 ```
 
 `server` binds loopback by default (privacy-preserving). To expose the
@@ -68,7 +68,7 @@ Environment variables (all optional):
 |-|-|-|
 | `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Where to look for JSONL |
 | `TOKEN_DASHEX_DB` | `~/.claude/token-dashex.db` | SQLite database path (prod only) |
-| `PORT` | `4000` | HTTP port |
+| `PORT` | `8081` | HTTP port |
 
 In production releases the database lives under `~/.claude/`, the same
 location as the upstream Python tool. The two databases have different
