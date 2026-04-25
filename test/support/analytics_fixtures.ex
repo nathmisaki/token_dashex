@@ -4,7 +4,7 @@ defmodule TokenDashex.AnalyticsFixtures do
   alias TokenDashex.Repo
   alias TokenDashex.Schema.{Message, Tool}
 
-  def insert_message(attrs) do
+  def insert_message(attrs \\ []) do
     defaults = %{
       session_id: "s1",
       message_id: "m_#{:erlang.unique_integer([:positive])}",
