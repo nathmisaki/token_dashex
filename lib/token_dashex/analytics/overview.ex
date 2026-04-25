@@ -1,8 +1,10 @@
 defmodule TokenDashex.Analytics.Overview do
   @moduledoc """
   Aggregates the headline numbers shown on the dashboard's Overview tab:
-  total tokens by class, distinct session and project counts, broken into
-  all-time / today / last-7-days windows.
+  total tokens by class, distinct session and project counts, plus cost.
+
+  `totals/0` keeps the legacy three-window view (all time / today / last 7d).
+  `window/1` returns a single window scoped by `since:` (DateTime or `nil`).
   """
 
   import Ecto.Query
@@ -16,6 +18,7 @@ defmodule TokenDashex.Analytics.Overview do
           output: non_neg_integer(),
           cache_create: non_neg_integer(),
           cache_read: non_neg_integer(),
+          turns: non_neg_integer(),
           sessions: non_neg_integer(),
           projects: non_neg_integer(),
           cost: float()
@@ -35,6 +38,13 @@ defmodule TokenDashex.Analytics.Overview do
     }
   end
 
+  @spec window(keyword()) :: window()
+  def window(opts \\ []) do
+    since = Keyword.get(opts, :since)
+    filter = if since, do: {:since, since}, else: nil
+    window_query(filter)
+  end
+
   defp window_query(filter) do
     base =
       from m in Message,
@@ -43,6 +53,7 @@ defmodule TokenDashex.Analytics.Overview do
           output: coalesce(sum(m.output_tokens), 0),
           cache_create: coalesce(sum(m.cache_creation_tokens), 0),
           cache_read: coalesce(sum(m.cache_read_tokens), 0),
+          turns: fragment("SUM(CASE WHEN ? = 'user' THEN 1 ELSE 0 END)", m.role),
           sessions: count(fragment("DISTINCT ?", m.session_id)),
           projects: count(fragment("DISTINCT ?", m.project_slug))
         }
@@ -63,6 +74,10 @@ defmodule TokenDashex.Analytics.Overview do
     from m in query, where: fragment("date(?)", m.timestamp) >= ^Date.to_iso8601(day)
   end
 
+  defp apply_filter(query, {:since, %DateTime{} = dt}) do
+    from m in query, where: m.timestamp >= ^dt
+  end
+
   defp total_cost(filter) do
     from(m in Message,
       group_by: m.model,
@@ -70,7 +85,9 @@ defmodule TokenDashex.Analytics.Overview do
         model: m.model,
         input: coalesce(sum(m.input_tokens), 0),
         output: coalesce(sum(m.output_tokens), 0),
-        cache_create: coalesce(sum(m.cache_creation_tokens), 0),
+        cache_create_5m: coalesce(sum(m.cache_creation_5m_tokens), 0),
+        cache_create_1h: coalesce(sum(m.cache_creation_1h_tokens), 0),
+        cache_create_total: coalesce(sum(m.cache_creation_tokens), 0),
         cache_read: coalesce(sum(m.cache_read_tokens), 0)
       }
     )
@@ -81,7 +98,9 @@ defmodule TokenDashex.Analytics.Overview do
         Pricing.cost_for(row.model, %{
           "input_tokens" => row.input,
           "output_tokens" => row.output,
-          "cache_creation_input_tokens" => row.cache_create,
+          "cache_creation_input_tokens" => row.cache_create_total,
+          "cache_creation_5m_input_tokens" => row.cache_create_5m,
+          "cache_creation_1h_input_tokens" => row.cache_create_1h,
           "cache_read_input_tokens" => row.cache_read
         })
     end)

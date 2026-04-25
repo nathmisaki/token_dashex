@@ -50,6 +50,7 @@ defmodule TokenDashex.Tips.SkillEfficiency do
 
     %{
       key: @key,
+      category: "skill-bloat",
       title: "Some skills are token-heavy",
       body: "These skills consume disproportionately more tokens per use:\n#{body}",
       severity: :info

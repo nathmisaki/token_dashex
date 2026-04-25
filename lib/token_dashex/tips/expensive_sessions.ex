@@ -35,6 +35,7 @@ defmodule TokenDashex.Tips.ExpensiveSessions do
         [
           %{
             key: @key,
+            category: "cost-spike",
             title: "Most expensive recent sessions",
             body: "Take a look at these and see what drove the cost:\n#{body}",
             severity: :info

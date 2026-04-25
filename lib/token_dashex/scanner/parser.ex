@@ -13,6 +13,7 @@ defmodule TokenDashex.Scanner.Parser do
           session_id: String.t(),
           message_id: String.t(),
           project_slug: String.t() | nil,
+          cwd: String.t() | nil,
           model: String.t() | nil,
           timestamp: DateTime.t(),
           usage: map(),
@@ -31,6 +32,7 @@ defmodule TokenDashex.Scanner.Parser do
        session_id: rec["sessionId"],
        message_id: message_id(rec, msg),
        project_slug: project_slug,
+       cwd: rec["cwd"],
        model: msg["model"],
        timestamp: parse_ts(rec["timestamp"]),
        usage: usage_map(msg["usage"] || %{}),
@@ -47,6 +49,7 @@ defmodule TokenDashex.Scanner.Parser do
        session_id: rec["sessionId"],
        message_id: message_id(rec, msg),
        project_slug: project_slug,
+       cwd: rec["cwd"],
        model: nil,
        timestamp: parse_ts(rec["timestamp"]),
        usage: %{},
@@ -61,10 +64,27 @@ defmodule TokenDashex.Scanner.Parser do
   defp message_id(rec, msg), do: msg["id"] || rec["uuid"]
 
   defp usage_map(usage) do
-    Map.take(
-      usage,
-      ~w(input_tokens output_tokens cache_creation_input_tokens cache_read_input_tokens)
-    )
+    base =
+      Map.take(
+        usage,
+        ~w(input_tokens output_tokens cache_creation_input_tokens cache_read_input_tokens)
+      )
+
+    cache = usage["cache_creation"] || %{}
+    flat_total = base["cache_creation_input_tokens"] || 0
+    ephemeral_5m = cache["ephemeral_5m_input_tokens"]
+    ephemeral_1h = cache["ephemeral_1h_input_tokens"] || 0
+
+    # Fall back: older records only publish the flat sum; bucket it as 5m.
+    five_m =
+      case ephemeral_5m do
+        nil -> flat_total - ephemeral_1h
+        v -> v
+      end
+
+    base
+    |> Map.put("cache_creation_5m_input_tokens", max(five_m, 0))
+    |> Map.put("cache_creation_1h_input_tokens", ephemeral_1h)
   end
 
   defp prompt_text(content) when is_binary(content), do: content

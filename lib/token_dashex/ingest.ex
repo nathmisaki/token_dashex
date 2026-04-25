@@ -34,9 +34,12 @@ defmodule TokenDashex.Ingest do
       input_tokens: rec.usage["input_tokens"] || 0,
       output_tokens: rec.usage["output_tokens"] || 0,
       cache_creation_tokens: rec.usage["cache_creation_input_tokens"] || 0,
+      cache_creation_5m_tokens: rec.usage["cache_creation_5m_input_tokens"] || 0,
+      cache_creation_1h_tokens: rec.usage["cache_creation_1h_input_tokens"] || 0,
       cache_read_tokens: rec.usage["cache_read_input_tokens"] || 0,
       prompt_text: rec.prompt_text,
       response_text: rec.response_text,
+      cwd: rec[:cwd],
       timestamp: ensure_usec(rec.timestamp)
     }
 

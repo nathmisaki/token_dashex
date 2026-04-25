@@ -24,6 +24,7 @@ defmodule TokenDashex.Tips.OversizedResults do
       [
         %{
           key: @key,
+          category: "tool-bloat",
           title: "Tool calls returned very large results",
           body:
             "#{count} tool invocations returned more than #{@threshold} estimated tokens. " <>

@@ -18,13 +18,28 @@ defmodule TokenDashex.Analytics.Daily do
           cost: float()
         }
 
-  @spec series(non_neg_integer()) :: [row]
-  def series(days \\ 30) do
-    cutoff = Date.utc_today() |> Date.add(-days)
+  @doc """
+  Returns one row per day. Pass an integer to look back N days, or
+  `since: DateTime.t() | nil` for an explicit cutoff (`nil` = all time).
+  """
+  @spec series(non_neg_integer() | keyword()) :: [row]
+  def series(arg \\ 30)
 
-    rows =
+  def series(days) when is_integer(days) do
+    cutoff_date = Date.utc_today() |> Date.add(-days)
+    fetch_with_filter({:gte, cutoff_date})
+  end
+
+  def series(opts) when is_list(opts) do
+    case Keyword.get(opts, :since) do
+      nil -> fetch_with_filter(nil)
+      %DateTime{} = dt -> fetch_with_filter({:since, dt})
+    end
+  end
+
+  defp fetch_with_filter(filter) do
+    base =
       from(m in Message,
-        where: fragment("date(?)", m.timestamp) >= ^Date.to_iso8601(cutoff),
         group_by: [fragment("date(?)", m.timestamp), m.model],
         order_by: [asc: fragment("date(?)", m.timestamp)],
         select: %{
@@ -33,12 +48,15 @@ defmodule TokenDashex.Analytics.Daily do
           input: coalesce(sum(m.input_tokens), 0),
           output: coalesce(sum(m.output_tokens), 0),
           cache_create: coalesce(sum(m.cache_creation_tokens), 0),
+          cache_create_5m: coalesce(sum(m.cache_creation_5m_tokens), 0),
+          cache_create_1h: coalesce(sum(m.cache_creation_1h_tokens), 0),
           cache_read: coalesce(sum(m.cache_read_tokens), 0)
         }
       )
-      |> Repo.all()
 
-    rows
+    base
+    |> apply_filter(filter)
+    |> Repo.all()
     |> Enum.group_by(& &1.date)
     |> Enum.map(fn {date_str, day_rows} ->
       cost =
@@ -48,6 +66,8 @@ defmodule TokenDashex.Analytics.Daily do
               "input_tokens" => r.input,
               "output_tokens" => r.output,
               "cache_creation_input_tokens" => r.cache_create,
+              "cache_creation_5m_input_tokens" => r.cache_create_5m,
+              "cache_creation_1h_input_tokens" => r.cache_create_1h,
               "cache_read_input_tokens" => r.cache_read
             })
         end)
@@ -62,6 +82,16 @@ defmodule TokenDashex.Analytics.Daily do
       }
     end)
     |> Enum.sort_by(& &1.date, Date)
+  end
+
+  defp apply_filter(query, nil), do: query
+
+  defp apply_filter(query, {:gte, %Date{} = day}) do
+    from m in query, where: fragment("date(?)", m.timestamp) >= ^Date.to_iso8601(day)
+  end
+
+  defp apply_filter(query, {:since, %DateTime{} = dt}) do
+    from m in query, where: m.timestamp >= ^dt
   end
 
   defp parse_date(str) when is_binary(str), do: Date.from_iso8601!(str)

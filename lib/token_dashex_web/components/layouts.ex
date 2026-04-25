@@ -40,7 +40,8 @@ defmodule TokenDashexWeb.Layouts do
     <header class="navbar px-4 sm:px-6 lg:px-8 border-b border-base-300">
       <div class="flex-1">
         <a href={~p"/"} class="flex w-fit items-center gap-2">
-          <span class="text-lg font-bold">token_dashex</span>
+          <img src={~p"/images/claude-color.png"} alt="Claude" class="h-7 w-7" />
+          <span class="text-lg font-bold">Claude Token Dashboard</span>
         </a>
       </div>
       <nav class="flex-none">

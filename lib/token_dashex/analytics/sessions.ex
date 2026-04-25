@@ -5,12 +5,14 @@ defmodule TokenDashex.Analytics.Sessions do
 
   import Ecto.Query
 
+  alias TokenDashex.ProjectName
   alias TokenDashex.Repo
   alias TokenDashex.Schema.{Message, Tool}
 
   @type session_row :: %{
           session_id: String.t(),
           project_slug: String.t(),
+          project_name: String.t(),
           input: non_neg_integer(),
           output: non_neg_integer(),
           cache_create: non_neg_integer(),
@@ -24,6 +26,7 @@ defmodule TokenDashex.Analytics.Sessions do
   def recent(opts \\ %{}) do
     limit = Map.get(opts, :limit, 50)
     project = Map.get(opts, :project_slug)
+    since = Map.get(opts, :since)
 
     base =
       from m in Message,
@@ -32,6 +35,7 @@ defmodule TokenDashex.Analytics.Sessions do
         select: %{
           session_id: m.session_id,
           project_slug: m.project_slug,
+          cwd: max(m.cwd),
           input: coalesce(sum(m.input_tokens), 0),
           output: coalesce(sum(m.output_tokens), 0),
           cache_create: coalesce(sum(m.cache_creation_tokens), 0),
@@ -43,14 +47,25 @@ defmodule TokenDashex.Analytics.Sessions do
 
     base
     |> filter_project(project)
+    |> filter_since(since)
     |> limit(^limit)
     |> Repo.all()
+    |> Enum.map(fn row ->
+      row
+      |> Map.put(:project_name, ProjectName.for_cwd(row.cwd, row.project_slug))
+      |> Map.delete(:cwd)
+    end)
   end
 
   defp filter_project(query, nil), do: query
 
   defp filter_project(query, slug),
     do: from(m in query, where: m.project_slug == ^slug)
+
+  defp filter_since(query, nil), do: query
+
+  defp filter_since(query, %DateTime{} = dt),
+    do: from(m in query, where: m.timestamp >= ^dt)
 
   @spec turns(String.t()) :: [Message.t()]
   def turns(session_id) do
