@@ -17,28 +17,23 @@ defmodule TokenDashexWeb.Router do
   scope "/", TokenDashexWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", OverviewLive, :index
+    live "/prompts", PromptsLive, :index
+    live "/sessions", SessionsLive, :index
+    live "/sessions/:id", SessionShowLive, :show
+    live "/projects", ProjectsLive, :index
+    live "/skills", SkillsLive, :index
+    live "/tips", TipsLive, :index
+    live "/settings", SettingsLive, :index
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", TokenDashexWeb do
-  #   pipe_through :api
-  # end
-
-  # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:token_dashex, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
       pipe_through :browser
 
       live_dashboard "/dashboard", metrics: TokenDashexWeb.Telemetry
-      forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end
 end

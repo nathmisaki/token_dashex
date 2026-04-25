@@ -11,7 +11,53 @@ defmodule TokenDashex.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      releases: releases(),
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.html": :test
+      ]
+    ]
+  end
+
+  # Two release targets:
+  #
+  #   * `token_dashex` — default, bundles ERTS for the current host.
+  #     Use this for local builds on the same OS+arch as deployment.
+  #
+  #   * `token_dashex_macos_arm64` — thin release without ERTS, intended
+  #     to be cross-built on Linux CI and run on macOS arm64 hosts that
+  #     already have Erlang/OTP 28 installed (e.g. via Homebrew, asdf).
+  #     Combined with `CC_PRECOMPILER_CURRENT_TARGET=aarch64-apple-darwin`
+  #     in CI this produces a tarball whose NIFs target Apple Silicon.
+  defp releases do
+    [
+      token_dashex: [
+        include_executables_for: [:unix],
+        steps: [:assemble, :tar]
+      ],
+      token_dashex_macos_arm64: [
+        applications: [token_dashex: :permanent],
+        include_erts: false,
+        include_executables_for: [:unix],
+        steps: [:assemble, :tar]
+      ],
+      # Burrito self-extracting binary. ERTS is fetched per target by
+      # Burrito (pre-built tarballs from erlangsters). NIFs still need
+      # `CC_PRECOMPILER_CURRENT_TARGET=<triple>` set in CI so exqlite
+      # resolves the right prebuilt artefact for the target platform.
+      token_dashex_app: [
+        steps: [:assemble, &Burrito.wrap/1],
+        burrito: [
+          targets: [
+            linux_x86_64: [os: :linux, cpu: :x86_64],
+            macos_arm64: [os: :darwin, cpu: :aarch64],
+            windows_x86_64: [os: :windows, cpu: :x86_64]
+          ]
+        ]
+      ]
     ]
   end
 
@@ -43,7 +89,7 @@ defmodule TokenDashex.MixProject do
       {:phoenix, "~> 1.8.1"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},
-      {:postgrex, ">= 0.0.0"},
+      {:ecto_sqlite3, "~> 0.17"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.1.0"},
@@ -58,14 +104,15 @@ defmodule TokenDashex.MixProject do
        app: false,
        compile: false,
        depth: 1},
-      {:swoosh, "~> 1.16"},
       {:req, "~> 0.5"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:burrito, "~> 1.3"},
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 
@@ -80,7 +127,7 @@ defmodule TokenDashex.MixProject do
       setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      test: ["ecto.drop --quiet", "ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["compile", "tailwind token_dashex", "esbuild token_dashex"],
       "assets.deploy": [

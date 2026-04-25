@@ -1,0 +1,148 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to attach the artifact to (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux_x86_64
+            triple: x86_64-unknown-linux-gnu
+            asset_suffix: linux-x86_64
+            asset_ext: ""
+          - target: macos_arm64
+            triple: aarch64-apple-darwin
+            asset_suffix: macos-arm64
+            asset_ext: ""
+          - target: windows_x86_64
+            triple: x86_64-pc-windows-msvc
+            asset_suffix: windows-x86_64
+            asset_ext: ".exe"
+    env:
+      MIX_ENV: prod
+      ELIXIR_VERSION: "1.19.4"
+      OTP_VERSION: "28.0"
+      ZIG_VERSION: "0.13.0"
+      # exqlite + cc_precompiler resolve NIFs against the host triple
+      # unless overridden. We force the target triple so the bundled NIF
+      # matches the platform Burrito is wrapping.
+      CC_PRECOMPILER_CURRENT_TARGET: ${{ matrix.triple }}
+      BURRITO_TARGET: ${{ matrix.target }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Erlang + Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      - name: Install Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: ${{ env.ZIG_VERSION }}
+
+      - name: Install xz + p7zip (Burrito runtime requirements)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xz-utils p7zip-full
+
+      - name: Cache mix deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build/prod
+          key: ${{ runner.os }}-burrito-${{ matrix.target }}-mix-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-burrito-${{ matrix.target }}-mix-
+
+      - name: Cache Burrito downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/burrito_file_cache
+          key: burrito-cache-otp-${{ env.OTP_VERSION }}-zig-${{ env.ZIG_VERSION }}-${{ matrix.target }}
+
+      - name: Fetch deps
+        run: mix deps.get --only prod
+
+      - name: Compile (NIFs target ${{ matrix.triple }})
+        run: mix compile
+
+      - name: Build assets
+        run: mix assets.deploy
+
+      - name: Build Burrito self-contained binary
+        run: mix release token_dashex_app --overwrite
+
+      - name: Locate Burrito output
+        id: locate
+        env:
+          TARGET: ${{ matrix.target }}
+          EXT: ${{ matrix.asset_ext }}
+        run: |
+          set -euo pipefail
+          BIN=$(find burrito_out -type f -name "*${TARGET}*${EXT}" | head -1)
+          if [ -z "$BIN" ]; then
+            echo "Burrito binary not found in burrito_out/" >&2
+            ls -la burrito_out/ || true
+            exit 1
+          fi
+          echo "binary=$BIN" >> "$GITHUB_OUTPUT"
+          ls -lh "$BIN"
+
+      - name: Package binary + checksum
+        id: package
+        env:
+          TAG: ${{ env.RELEASE_TAG }}
+          BIN: ${{ steps.locate.outputs.binary }}
+          SUFFIX: ${{ matrix.asset_suffix }}
+          EXT: ${{ matrix.asset_ext }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TAG:-}" ]; then
+            echo "RELEASE_TAG is empty; aborting" >&2
+            exit 1
+          fi
+          OUT="token_dashex-${TAG}-${SUFFIX}${EXT}"
+          cp "$BIN" "$OUT"
+          chmod +x "$OUT"
+          sha256sum "$OUT" > "$OUT.sha256"
+          echo "binary=$OUT" >> "$GITHUB_OUTPUT"
+          echo "checksum=$OUT.sha256" >> "$GITHUB_OUTPUT"
+          ls -lh "$OUT" "$OUT.sha256"
+
+      - name: Upload artifact (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: token_dashex-${{ matrix.asset_suffix }}
+          path: |
+            ${{ steps.package.outputs.binary }}
+            ${{ steps.package.outputs.checksum }}
+
+      - name: Attach to GitHub release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: |
+            ${{ steps.package.outputs.binary }}
+            ${{ steps.package.outputs.checksum }}

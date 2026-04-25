@@ -2,13 +2,10 @@ import Config
 
 # Configure your database
 config :token_dashex, TokenDashex.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "token_dashex_dev",
+  database: Path.expand("./priv/repo/dev.db"),
+  pool_size: 5,
   stacktrace: true,
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+  show_sensitive_data_on_connection_error: true
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -19,7 +16,7 @@ config :token_dashex, TokenDashex.Repo,
 config :token_dashex, TokenDashexWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4000")],
+  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "8081")],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
@@ -83,6 +80,3 @@ config :phoenix_live_view,
   debug_attributes: true,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
-
-# Disable swoosh api client as it is only required for production adapters.
-config :swoosh, :api_client, false

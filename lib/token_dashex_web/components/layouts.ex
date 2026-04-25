@@ -33,42 +33,77 @@ defmodule TokenDashexWeb.Layouts do
 
   slot :inner_block, required: true
 
+  attr :active, :atom, default: nil, doc: "the active dashboard tab"
+
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
+    <header class="navbar px-4 sm:px-6 lg:px-8 border-b border-base-300">
       <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
+        <a href={~p"/"} class="flex w-fit items-center gap-2">
+          <span class="text-lg font-bold">token_dashex</span>
         </a>
       </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
+      <nav class="flex-none">
+        <ul class="menu menu-horizontal px-1 gap-1">
+          <.tab to={~p"/"} label="Overview" active={@active == :overview} />
+          <.tab to={~p"/prompts"} label="Prompts" active={@active == :prompts} />
+          <.tab to={~p"/sessions"} label="Sessions" active={@active == :sessions} />
+          <.tab to={~p"/projects"} label="Projects" active={@active == :projects} />
+          <.tab to={~p"/skills"} label="Skills" active={@active == :skills} />
+          <.tab to={~p"/tips"} label="Tips" active={@active == :tips} />
+          <.tab to={~p"/settings"} label="Settings" active={@active == :settings} />
         </ul>
+      </nav>
+      <div class="flex-none ml-2">
+        <.theme_toggle />
       </div>
     </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+    <main class="px-4 py-6 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-7xl space-y-6">
         {render_slot(@inner_block)}
       </div>
     </main>
 
     <.flash_group flash={@flash} />
+    """
+  end
+
+  attr :icon, :string, default: "hero-information-circle"
+  attr :title, :string, required: true
+  slot :inner_block, required: true
+
+  def empty_state(assigns) do
+    ~H"""
+    <section class="card bg-base-200 shadow">
+      <div class="card-body items-center text-center py-16">
+        <.icon name={@icon} class="size-12 opacity-40" />
+        <h3 class="card-title mt-2">{@title}</h3>
+        <div class="opacity-70 max-w-md">
+          {render_slot(@inner_block)}
+        </div>
+      </div>
+    </section>
+    """
+  end
+
+  attr :to, :string, required: true
+  attr :label, :string, required: true
+  attr :active, :boolean, default: false
+
+  defp tab(assigns) do
+    ~H"""
+    <li>
+      <.link
+        navigate={@to}
+        class={[
+          "rounded-md",
+          @active && "bg-primary text-primary-content font-semibold"
+        ]}
+      >
+        {@label}
+      </.link>
+    </li>
     """
   end
 

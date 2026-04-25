@@ -16,6 +16,12 @@
 # If the VM crashes, it generates a dump, let's ignore it too.
 erl_crash.dump
 
+# Local SQLite databases (per-environment)
+/priv/repo/*.db
+/priv/repo/*.db-journal
+/priv/repo/*.db-wal
+/priv/repo/*.db-shm
+
 # Also ignore archive artifacts (built via "mix archive.build").
 *.ez
 
