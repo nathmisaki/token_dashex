@@ -1,14 +1,13 @@
 defmodule TokenDashex.Tips.SkillEfficiency do
   @moduledoc """
   Compares per-skill mean tokens-per-invocation. Slugs that consume more than
-  two standard deviations above the cohort mean are flagged.
+  two standard deviations above the cohort mean are flagged. Produces one tip
+  per outlier skill.
   """
 
   @behaviour TokenDashex.Tips.Rule
 
   alias TokenDashex.Skills
-
-  @key "skill_efficiency"
 
   @impl true
   def evaluate do
@@ -20,41 +19,31 @@ defmodule TokenDashex.Tips.SkillEfficiency do
       end)
 
     case rows do
-      [] ->
-        []
-
-      [_only] ->
-        []
-
-      _ ->
-        avgs = Enum.map(rows, & &1.avg)
-        mean = Enum.sum(avgs) / length(avgs)
-        std = std_dev(avgs, mean)
-
-        outliers = Enum.filter(rows, &(&1.avg > mean + 2 * std))
-
-        case outliers do
-          [] -> []
-          _ -> [build_tip(outliers)]
-        end
+      [] -> []
+      [_only] -> []
+      _ -> find_outliers(rows)
     end
   end
 
-  defp build_tip(outliers) do
-    body =
-      outliers
-      |> Enum.map(fn r ->
-        "  - #{r.slug}: ~#{round(r.avg)} tokens / invocation"
-      end)
-      |> Enum.join("\n")
+  defp find_outliers(rows) do
+    avgs = Enum.map(rows, & &1.avg)
+    mean = Enum.sum(avgs) / length(avgs)
+    std = std_dev(avgs, mean)
 
-    %{
-      key: @key,
-      category: "skill-bloat",
-      title: "Some skills are token-heavy",
-      body: "These skills consume disproportionately more tokens per use:\n#{body}",
-      severity: :info
-    }
+    rows
+    |> Enum.filter(&(&1.avg > mean + 2 * std))
+    |> Enum.map(fn r ->
+      %{
+        key: "skill-bloat:#{r.slug}",
+        category: "skill-bloat",
+        title: "#{r.slug} is token-heavy",
+        body:
+          "This skill consumes ~#{round(r.avg)} tokens per invocation, " <>
+            "which is significantly above the cohort average.",
+        scope: r.slug,
+        severity: :info
+      }
+    end)
   end
 
   defp std_dev(values, mean) do

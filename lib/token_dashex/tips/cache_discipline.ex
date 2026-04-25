@@ -1,8 +1,9 @@
 defmodule TokenDashex.Tips.CacheDiscipline do
   @moduledoc """
-  Flags low cache-hit ratio over the last 7 days. Hit ratio is
-  cache_read / (cache_read + cache_creation); below 0.5 we suggest reusing
-  prompts to take advantage of Anthropic's cache pricing.
+  Flags low cache-hit ratio per project over the last 7 days. Hit ratio is
+  cache_read / (cache_read + cache_creation); below 0.4 we suggest reusing
+  prompts to take advantage of Anthropic's cache pricing. Produces one tip
+  per offending project (like the Python dashboard).
   """
 
   @behaviour TokenDashex.Tips.Rule
@@ -12,39 +13,44 @@ defmodule TokenDashex.Tips.CacheDiscipline do
   alias TokenDashex.Repo
   alias TokenDashex.Schema.Message
 
-  @key "cache_discipline"
-  @threshold 0.5
+  @threshold 0.40
 
   @impl true
   def evaluate do
-    cutoff = Date.utc_today() |> Date.add(-7) |> Date.to_iso8601()
+    cutoff = DateTime.utc_now() |> DateTime.add(-7 * 86_400, :second)
 
-    %{cache_read: read, cache_create: create} =
+    rows =
       from(m in Message,
-        where: fragment("date(?)", m.timestamp) >= ^cutoff,
+        where: m.timestamp >= ^cutoff,
+        group_by: m.project_slug,
         select: %{
+          project_slug: m.project_slug,
           cache_read: coalesce(sum(m.cache_read_tokens), 0),
           cache_create: coalesce(sum(m.cache_creation_tokens), 0)
         }
       )
-      |> Repo.one()
+      |> Repo.all()
 
-    total = read + create
+    rows
+    |> Enum.filter(fn %{cache_read: r, cache_create: c} ->
+      total = r + c
+      total > 100_000 and r / total < @threshold
+    end)
+    |> Enum.map(fn %{project_slug: slug, cache_read: r, cache_create: c} ->
+      total = r + c
+      hit = Float.round(r / total * 100, 1)
+      project = slug || "unknown"
 
-    if total > 0 and read / total < @threshold do
-      [
-        %{
-          key: @key,
-          category: "cache",
-          title: "Cache hit rate is low",
-          body:
-            "Only #{Float.round(read / total * 100, 1)}% of cacheable input tokens hit the prompt cache over the last 7 days. " <>
-              "Reusing the same system prompts and reading large files via cached prefixes will lower cost.",
-          severity: :warning
-        }
-      ]
-    else
-      []
-    end
+      %{
+        key: "cache:#{project}",
+        category: "cache",
+        title: "Low cache hit rate in #{project}",
+        body:
+          "Cache hit rate is #{hit}% over the last 7 days. Sessions that restart context " <>
+            "frequently rebuild cache. Consider longer-lived sessions or fewer context resets.",
+        scope: project,
+        severity: :warning
+      }
+    end)
   end
 end
