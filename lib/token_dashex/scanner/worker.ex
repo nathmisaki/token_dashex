@@ -89,11 +89,19 @@ defmodule TokenDashex.Scanner.Worker do
         end
       end)
 
+    duration_ms = System.monotonic_time(:millisecond) - started
+
     summary = %Summary{
       files: files,
       records: records,
-      duration_ms: System.monotonic_time(:millisecond) - started
+      duration_ms: duration_ms
     }
+
+    :telemetry.execute(
+      [:token_dashex, :scanner, :tick],
+      %{files: files, records: records, duration_ms: duration_ms},
+      %{}
+    )
 
     Phoenix.PubSub.broadcast(
       TokenDashex.PubSub,
