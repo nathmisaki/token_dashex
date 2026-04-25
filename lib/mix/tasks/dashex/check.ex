@@ -88,6 +88,10 @@ defmodule Mix.Tasks.Dashex.Check do
     end
   end
 
+  defp run_step("coveralls" = task, args) do
+    Mix.shell().cmd("MIX_ENV=test mix #{task} #{Enum.join(args, " ")}")
+  end
+
   defp run_step(task, args) do
     Mix.shell().cmd("mix #{task} #{Enum.join(args, " ")}")
   end

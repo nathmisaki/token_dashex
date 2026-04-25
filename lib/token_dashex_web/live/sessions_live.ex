@@ -38,7 +38,7 @@ defmodule TokenDashexWeb.SessionsLive do
           <select name="project" class="select select-bordered select-sm">
             <option value="">All projects</option>
             <option :for={p <- @projects} value={p.project_slug} selected={p.project_slug == @project}>
-              {p.project_slug}
+              {p.project_name}
             </option>
           </select>
         </form>
@@ -52,23 +52,21 @@ defmodule TokenDashexWeb.SessionsLive do
         <table class="table">
           <thead>
             <tr>
-              <th>Session</th>
+              <th>Started</th>
               <th>Project</th>
               <th class="text-right">Turns</th>
-              <th class="text-right">Input</th>
-              <th class="text-right">Output</th>
-              <th>Last activity</th>
+              <th class="text-right">Tokens</th>
+              <th>Session</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             <tr :for={row <- @rows}>
-              <td class="font-mono">{Format.short_id(row.session_id)}</td>
-              <td>{row.project_slug}</td>
+              <td class="whitespace-nowrap text-sm opacity-70">{Format.date(row.first_at)}</td>
+              <td>{row.project_name}</td>
               <td class="text-right">{row.turns}</td>
-              <td class="text-right">{Format.tokens(row.input)}</td>
-              <td class="text-right">{Format.tokens(row.output)}</td>
-              <td class="whitespace-nowrap text-sm opacity-70">{Format.date(row.last_at)}</td>
+              <td class="text-right">{Format.tokens(row.input + row.output)}</td>
+              <td class="font-mono">{Format.short_id(row.session_id)}</td>
               <td>
                 <.link
                   navigate={~p"/sessions/#{row.session_id}"}
