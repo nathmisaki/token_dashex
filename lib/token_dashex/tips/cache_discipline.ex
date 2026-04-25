@@ -35,6 +35,7 @@ defmodule TokenDashex.Tips.CacheDiscipline do
       [
         %{
           key: @key,
+          category: "cache",
           title: "Cache hit rate is low",
           body:
             "Only #{Float.round(read / total * 100, 1)}% of cacheable input tokens hit the prompt cache over the last 7 days. " <>

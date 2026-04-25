@@ -7,6 +7,7 @@ defmodule TokenDashex.Tips.Rule do
 
   @type tip :: %{
           key: String.t(),
+          category: String.t(),
           title: String.t(),
           body: String.t(),
           severity: :info | :warning

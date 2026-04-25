@@ -43,6 +43,7 @@ defmodule TokenDashex.Tips.RepeatedReads do
         [
           %{
             key: @key,
+            category: "repeat-file",
             title: "Some sessions re-read files heavily",
             body:
               "Reading the same context repeatedly burns input tokens. Consider caching " <>
