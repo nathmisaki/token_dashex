@@ -26,7 +26,10 @@ defmodule TokenDashex.Release do
   def scan do
     {:ok, _} = Application.ensure_all_started(@app)
     summary = TokenDashex.Scanner.Worker.tick()
-    IO.puts("scanned #{summary.files} files, #{summary.records} records, #{summary.duration_ms}ms")
+
+    IO.puts(
+      "scanned #{summary.files} files, #{summary.records} records, #{summary.duration_ms}ms"
+    )
   end
 
   def stats do

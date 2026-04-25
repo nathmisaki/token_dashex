@@ -27,12 +27,13 @@ defmodule TokenDashexWeb.SkillsLive do
     ~H"""
     <Layouts.app flash={@flash} active={:skills}>
       <h1 class="text-2xl font-bold">Skills</h1>
-      <p class="opacity-70">Skills installed under <code>~/.claude/</code> and how often they're invoked.</p>
+      <p class="opacity-70">
+        Skills installed under <code>~/.claude/</code> and how often they're invoked.
+      </p>
 
       <Layouts.empty_state :if={@catalog == []} title="No skills installed">
-        Place a <code class="badge">SKILL.md</code> under
-        <code class="badge">~/.claude/skills/</code>,
-        <code class="badge">~/.claude/scheduled-tasks/</code>,
+        Place a <code class="badge">SKILL.md</code>
+        under <code class="badge">~/.claude/skills/</code>, <code class="badge">~/.claude/scheduled-tasks/</code>,
         or any plugin to populate this list.
       </Layouts.empty_state>
 

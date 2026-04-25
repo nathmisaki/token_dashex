@@ -3,6 +3,7 @@ defmodule Mix.Tasks.Dashex.Scan do
   @shortdoc "Scan Claude Code JSONL files"
 
   use Mix.Task
+  use Boundary, check: [in: false, out: false]
 
   @impl Mix.Task
   def run(_args) do

@@ -61,7 +61,10 @@ defmodule TokenDashex.Scanner.Parser do
   defp message_id(rec, msg), do: msg["id"] || rec["uuid"]
 
   defp usage_map(usage) do
-    Map.take(usage, ~w(input_tokens output_tokens cache_creation_input_tokens cache_read_input_tokens))
+    Map.take(
+      usage,
+      ~w(input_tokens output_tokens cache_creation_input_tokens cache_read_input_tokens)
+    )
   end
 
   defp prompt_text(content) when is_binary(content), do: content

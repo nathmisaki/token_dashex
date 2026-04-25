@@ -3,6 +3,7 @@ defmodule Mix.Tasks.Dashex.Today do
   @shortdoc "Show today's token totals"
 
   use Mix.Task
+  use Boundary, check: [in: false, out: false]
 
   @impl Mix.Task
   def run(_args) do
