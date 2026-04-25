@@ -5,17 +5,17 @@ defmodule TokenDashexWeb.SettingsLiveTest do
 
   alias TokenDashex.Pricing.Plan
 
-  test "renders the four plans with the seeded api selected", %{conn: conn} do
+  test "renders the plan section with the seeded api selected", %{conn: conn} do
     {:ok, _view, html} = live(conn, "/settings")
 
     for label <- ~w(API Pro Max), do: assert(html =~ label)
-    assert html =~ "Active billing plan"
+    assert html =~ "Plan"
   end
 
   test "switching plan updates the active state and persists it", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/settings")
 
-    render_change(view, "set_plan", %{"plan" => "max"})
+    render_submit(view, "save_plan", %{"plan" => "max"})
     assert Plan.get() == "max"
   end
 end
