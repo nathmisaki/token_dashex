@@ -12,6 +12,7 @@ defmodule TokenDashex.AnalyticsTest do
       AnalyticsFixtures.insert_message(
         session_id: "s1",
         role: "user",
+        uuid: "test-user-uuid-s1",
         prompt_text: "What is 2+2?",
         project_slug: "alpha",
         timestamp: today
@@ -20,6 +21,7 @@ defmodule TokenDashex.AnalyticsTest do
     AnalyticsFixtures.insert_message(
       session_id: "s1",
       role: "assistant",
+      parent_uuid: user_msg.uuid,
       model: "claude-sonnet-4-6",
       input_tokens: 100,
       output_tokens: 200,

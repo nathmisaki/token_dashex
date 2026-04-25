@@ -47,6 +47,13 @@ defmodule TokenDashexWeb.Live.Format do
 
   def usd(_), do: "$0.00"
 
+  @spec usd4(number()) :: String.t()
+  def usd4(n) when is_number(n) do
+    "$" <> :erlang.float_to_binary(n * 1.0, decimals: 4)
+  end
+
+  def usd4(_), do: "$0.0000"
+
   @spec date(DateTime.t() | nil) :: String.t()
   def date(%DateTime{} = dt), do: Calendar.strftime(dt, "%Y-%m-%d %H:%M")
   def date(_), do: "—"

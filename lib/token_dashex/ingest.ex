@@ -28,6 +28,8 @@ defmodule TokenDashex.Ingest do
       id: msg_id,
       session_id: rec.session_id,
       message_id: rec.message_id,
+      uuid: rec[:uuid],
+      parent_uuid: rec[:parent_uuid],
       project_slug: rec.project_slug || "_unknown",
       role: rec.role,
       model: rec.model,
