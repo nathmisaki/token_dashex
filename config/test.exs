@@ -10,6 +10,9 @@ config :token_dashex, TokenDashex.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 5
 
+# Disable the periodic scanner during tests; tests drive ticks manually.
+config :token_dashex, scanner_auto_tick: false
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :token_dashex, TokenDashexWeb.Endpoint,

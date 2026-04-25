@@ -7,28 +7,31 @@ defmodule TokenDashex.Application do
 
   @impl true
   def start(_type, _args) do
+    TokenDashex.Pricing.reload!()
+
     children = [
       TokenDashexWeb.Telemetry,
       TokenDashex.Repo,
       {DNSCluster, query: Application.get_env(:token_dashex, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: TokenDashex.PubSub},
-      # Start a worker by calling: TokenDashex.Worker.start_link(arg)
-      # {TokenDashex.Worker, arg},
-      # Start to serve requests, typically the last entry
+      scanner_child(),
       TokenDashexWeb.Endpoint
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: TokenDashex.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
-  # Tell Phoenix to update the endpoint configuration
-  # whenever the application is updated.
   @impl true
   def config_change(changed, _new, removed) do
     TokenDashexWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  defp scanner_child do
+    {TokenDashex.Scanner.Worker,
+     root: TokenDashex.Paths.projects_dir(),
+     interval: Application.get_env(:token_dashex, :scanner_interval_ms, 30_000),
+     auto_tick: Application.get_env(:token_dashex, :scanner_auto_tick, true)}
   end
 end
