@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to attach the artifact to (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  macos-arm64:
+    name: Build macOS arm64 release
+    runs-on: macos-14
+    env:
+      MIX_ENV: prod
+      ELIXIR_VERSION: "1.19.4"
+      OTP_VERSION: "28.0"
+      RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Erlang + Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      - name: Cache mix deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build/prod
+          key: ${{ runner.os }}-arm64-mix-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-arm64-mix-
+
+      - name: Fetch deps
+        run: mix deps.get --only prod
+
+      - name: Compile
+        run: mix compile
+
+      - name: Build assets
+        run: mix assets.deploy
+
+      - name: Build release
+        run: mix release --overwrite
+
+      - name: Package tarball
+        id: package
+        env:
+          TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TAG:-}" ]; then
+            echo "RELEASE_TAG is empty; aborting" >&2
+            exit 1
+          fi
+          ARCHIVE="token_dashex-${TAG}-macos-arm64.tar.gz"
+          tar -C _build/prod/rel -czf "$ARCHIVE" token_dashex
+          shasum -a 256 "$ARCHIVE" > "$ARCHIVE.sha256"
+          echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
+          echo "checksum=$ARCHIVE.sha256" >> "$GITHUB_OUTPUT"
+          ls -lh "$ARCHIVE" "$ARCHIVE.sha256"
+
+      - name: Upload artifact (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: token_dashex-macos-arm64
+          path: |
+            ${{ steps.package.outputs.archive }}
+            ${{ steps.package.outputs.checksum }}
+
+      - name: Attach to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: |
+            ${{ steps.package.outputs.archive }}
+            ${{ steps.package.outputs.checksum }}
