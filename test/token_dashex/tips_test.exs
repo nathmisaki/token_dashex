@@ -59,31 +59,33 @@ defmodule TokenDashex.TipsTest do
   end
 
   describe "RepeatedReads" do
-    test "fires one tip per offending session" do
+    test "fires one tip per offending file target" do
       msg = AnalyticsFixtures.insert_message(session_id: "rr1")
 
-      for _ <- 1..6 do
+      for _ <- 1..11 do
         Repo.insert!(%Tool{
           message_id: msg.id,
           session_id: msg.session_id,
           name: "Read",
+          target: "/some/file.ex",
           input_tokens: 1
         })
       end
 
       tips = TokenDashex.Tips.RepeatedReads.evaluate()
-      assert [%{key: "repeat-file:" <> _}] = tips
+      assert [%{key: "repeat-file:/some/file.ex"}] = tips
     end
 
-    test "produces multiple tips for multiple offending sessions" do
-      for session <- ["rr_a", "rr_b"] do
-        msg = AnalyticsFixtures.insert_message(session_id: session)
+    test "produces multiple tips for multiple offending files" do
+      msg = AnalyticsFixtures.insert_message(session_id: "rr_a")
 
-        for _ <- 1..6 do
+      for target <- ["/a/foo.ex", "/b/bar.ex"] do
+        for _ <- 1..11 do
           Repo.insert!(%Tool{
             message_id: msg.id,
             session_id: msg.session_id,
             name: "Read",
+            target: target,
             input_tokens: 1
           })
         end
@@ -92,20 +94,53 @@ defmodule TokenDashex.TipsTest do
       tips = TokenDashex.Tips.RepeatedReads.evaluate()
       assert length(tips) == 2
     end
+
+    test "is silent when reads are below threshold" do
+      msg = AnalyticsFixtures.insert_message(session_id: "rr_low")
+
+      for _ <- 1..5 do
+        Repo.insert!(%Tool{
+          message_id: msg.id,
+          session_id: msg.session_id,
+          name: "Read",
+          target: "/some/file.ex",
+          input_tokens: 1
+        })
+      end
+
+      assert [] = TokenDashex.Tips.RepeatedReads.evaluate()
+    end
   end
 
   describe "OversizedResults" do
-    test "fires when a tool returns >50k tokens" do
+    test "fires when tool results over 50k appear 5+ times this week" do
       msg = AnalyticsFixtures.insert_message()
 
-      Repo.insert!(%Tool{
-        message_id: msg.id,
-        session_id: msg.session_id,
-        name: "Read",
-        result_tokens: 60_000
-      })
+      for _ <- 1..5 do
+        Repo.insert!(%Tool{
+          message_id: msg.id,
+          session_id: msg.session_id,
+          name: "_tool_result",
+          result_tokens: 60_000
+        })
+      end
 
-      assert [%{key: "oversized_results"}] = TokenDashex.Tips.OversizedResults.evaluate()
+      assert [%{key: "tool-bloat:result-50k+"}] = TokenDashex.Tips.OversizedResults.evaluate()
+    end
+
+    test "is silent when fewer than 5 oversized results" do
+      msg = AnalyticsFixtures.insert_message()
+
+      for _ <- 1..4 do
+        Repo.insert!(%Tool{
+          message_id: msg.id,
+          session_id: msg.session_id,
+          name: "_tool_result",
+          result_tokens: 60_000
+        })
+      end
+
+      assert [] = TokenDashex.Tips.OversizedResults.evaluate()
     end
   end
 end

@@ -12,9 +12,10 @@ defmodule TokenDashex.Tips do
   @default_rules [
     TokenDashex.Tips.CacheDiscipline,
     TokenDashex.Tips.RepeatedReads,
+    TokenDashex.Tips.RepeatBash,
+    TokenDashex.Tips.RightSize,
     TokenDashex.Tips.OversizedResults,
-    TokenDashex.Tips.ExpensiveSessions,
-    TokenDashex.Tips.SkillEfficiency
+    TokenDashex.Tips.SubagentOutlier
   ]
 
   @dismiss_window_seconds 14 * 86_400

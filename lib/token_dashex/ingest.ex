@@ -8,8 +8,8 @@ defmodule TokenDashex.Ingest do
   import Ecto.Query
 
   alias TokenDashex.Repo
-  alias TokenDashex.Schema.{Message, Tool}
   alias TokenDashex.Scanner.Parser
+  alias TokenDashex.Schema.{Message, Tool}
 
   @spec upsert_records([Parser.parsed()]) :: {:ok, non_neg_integer()}
   def upsert_records(records) when is_list(records) do
@@ -42,6 +42,8 @@ defmodule TokenDashex.Ingest do
       prompt_text: rec.prompt_text,
       response_text: rec.response_text,
       cwd: rec[:cwd],
+      is_sidechain: rec[:is_sidechain] || false,
+      agent_id: rec[:agent_id],
       timestamp: ensure_usec(rec.timestamp)
     }
 
@@ -60,6 +62,7 @@ defmodule TokenDashex.Ingest do
             message_id: msg_id,
             session_id: rec.session_id,
             name: tool.name,
+            target: tool[:target],
             input_tokens: tool.input_tokens,
             output_tokens: tool.output_tokens,
             result_tokens: 0,
