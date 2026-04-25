@@ -106,7 +106,7 @@ defmodule TokenDashex.Scanner.Worker do
 
   defp scan_file(path, slug) do
     with {:ok, %{mtime: mtime, size: size}} <- file_stat(path),
-         %{offset: offset, prior_mtime: prior_mtime} = state <- load_state(path),
+         %{offset: offset, prior_mtime: prior_mtime} <- load_state(path),
          true <- changed?(prior_mtime, mtime, offset, size) || :unchanged do
       records = read_new_records(path, offset, size)
       parsed_records = parse_and_dedup(records, slug)

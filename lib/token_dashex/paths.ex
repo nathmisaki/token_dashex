@@ -21,6 +21,13 @@ defmodule TokenDashex.Paths do
 
   @spec skills_roots() :: [String.t()]
   def skills_roots do
+    case Application.get_env(:token_dashex, :skills_roots) do
+      nil -> default_skills_roots()
+      roots when is_list(roots) -> roots
+    end
+  end
+
+  defp default_skills_roots do
     [
       Path.expand("~/.claude/skills"),
       Path.expand("~/.claude/scheduled-tasks"),
