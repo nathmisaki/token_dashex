@@ -22,6 +22,8 @@ defmodule TokenDashexWeb.OverviewLiveTest do
   end
 
   test "subscribes to scanner topic and reloads on broadcast", %{conn: conn} do
+    AnalyticsFixtures.insert_message(input_tokens: 1, output_tokens: 1)
+
     {:ok, view, _html} = live(conn, "/")
 
     Phoenix.PubSub.broadcast(
@@ -31,5 +33,11 @@ defmodule TokenDashexWeb.OverviewLiveTest do
     )
 
     assert render(view) =~ "Daily token volume"
+  end
+
+  test "renders empty state with no data", %{conn: conn} do
+    {:ok, _view, html} = live(conn, "/")
+    assert html =~ "No data yet"
+    assert html =~ "mix dashex.scan"
   end
 end

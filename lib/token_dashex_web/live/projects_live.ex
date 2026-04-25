@@ -24,7 +24,12 @@ defmodule TokenDashexWeb.ProjectsLive do
     <Layouts.app flash={@flash} active={:projects}>
       <h1 class="text-2xl font-bold">Projects</h1>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <Layouts.empty_state :if={@rows == []} title="No projects yet">
+        Projects appear once Claude Code records sessions in
+        <code class="badge">~/.claude/projects/</code>.
+      </Layouts.empty_state>
+
+      <div :if={@rows != []} class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <article :for={row <- @rows} class="card bg-base-200 shadow">
           <div class="card-body">
             <h2 class="card-title break-all">{row.project_slug}</h2>

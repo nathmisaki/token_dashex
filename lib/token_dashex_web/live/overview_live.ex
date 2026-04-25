@@ -56,20 +56,25 @@ defmodule TokenDashexWeb.OverviewLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} active={:overview}>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Layouts.empty_state :if={@totals.all_time.sessions == 0} title="No data yet">
+        Run <code class="badge">mix dashex.scan</code> to ingest your Claude Code
+        sessions, or wait — the background scanner picks up new files every 30 seconds.
+      </Layouts.empty_state>
+
+      <div :if={@totals.all_time.sessions > 0} class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <.window_card label="All time" window={@totals.all_time} />
         <.window_card label="Today" window={@totals.today} />
         <.window_card label="Last 7 days" window={@totals.last_7d} />
       </div>
 
-      <section class="card bg-base-200 shadow">
+      <section :if={@totals.all_time.sessions > 0} class="card bg-base-200 shadow">
         <div class="card-body">
           <h2 class="card-title">Daily token volume</h2>
           <div id="overview-chart" phx-hook="ECharts" data-option={@chart_option} class="h-80" />
         </div>
       </section>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div :if={@totals.all_time.sessions > 0} class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <.list_card title="Top projects" rows={@projects} cols={[
           {"Project", & &1.project_slug},
           {"Tokens", &Format.tokens(&1.input + &1.output)},

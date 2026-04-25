@@ -44,7 +44,11 @@ defmodule TokenDashexWeb.SessionsLive do
         </form>
       </header>
 
-      <div class="overflow-x-auto card bg-base-200 shadow">
+      <Layouts.empty_state :if={@rows == []} title="No sessions found">
+        Try widening the project filter or run <code class="badge">mix dashex.scan</code>.
+      </Layouts.empty_state>
+
+      <div :if={@rows != []} class="overflow-x-auto card bg-base-200 shadow">
         <table class="table">
           <thead>
             <tr>

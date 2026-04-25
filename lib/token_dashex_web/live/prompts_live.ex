@@ -39,7 +39,11 @@ defmodule TokenDashexWeb.PromptsLive do
         </div>
       </header>
 
-      <div class="overflow-x-auto card bg-base-200 shadow">
+      <Layouts.empty_state :if={@rows == []} title="No prompts yet">
+        Once your sessions are ingested, the most expensive prompts show up here.
+      </Layouts.empty_state>
+
+      <div :if={@rows != []} class="overflow-x-auto card bg-base-200 shadow">
         <table class="table">
           <thead>
             <tr>

@@ -69,6 +69,24 @@ defmodule TokenDashexWeb.Layouts do
     """
   end
 
+  attr :icon, :string, default: "hero-information-circle"
+  attr :title, :string, required: true
+  slot :inner_block, required: true
+
+  def empty_state(assigns) do
+    ~H"""
+    <section class="card bg-base-200 shadow">
+      <div class="card-body items-center text-center py-16">
+        <.icon name={@icon} class="size-12 opacity-40" />
+        <h3 class="card-title mt-2">{@title}</h3>
+        <div class="opacity-70 max-w-md">
+          {render_slot(@inner_block)}
+        </div>
+      </div>
+    </section>
+    """
+  end
+
   attr :to, :string, required: true
   attr :label, :string, required: true
   attr :active, :boolean, default: false

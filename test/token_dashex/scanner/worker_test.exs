@@ -56,4 +56,27 @@ defmodule TokenDashex.Scanner.WorkerTest do
     summary = Worker.tick(pid)
     assert summary == %Worker.Summary{files: 0, records: 0, duration_ms: summary.duration_ms}
   end
+
+  test "tick emits a [:token_dashex, :scanner, :tick] telemetry event", %{root: root} do
+    pid = start_worker(root)
+
+    handler_id = "tdx-test-#{:erlang.unique_integer([:positive])}"
+    test_pid = self()
+
+    :telemetry.attach(
+      handler_id,
+      [:token_dashex, :scanner, :tick],
+      fn _event, measurements, _meta, _config ->
+        send(test_pid, {:telemetry, measurements})
+      end,
+      nil
+    )
+
+    Worker.tick(pid)
+
+    assert_receive {:telemetry, %{files: 1, records: r, duration_ms: _}} when r > 0
+  after
+    :telemetry.list_handlers([:token_dashex, :scanner, :tick])
+    |> Enum.each(&:telemetry.detach(&1.id))
+  end
 end
