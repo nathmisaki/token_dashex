@@ -25,8 +25,7 @@ defmodule TokenDashexWeb.ProjectsLive do
       <h1 class="text-2xl font-bold">Projects</h1>
 
       <Layouts.empty_state :if={@rows == []} title="No projects yet">
-        Projects appear once Claude Code records sessions in
-        <code class="badge">~/.claude/projects/</code>.
+        Projects appear once Claude Code records sessions in <code class="badge">~/.claude/projects/</code>.
       </Layouts.empty_state>
 
       <div :if={@rows != []} class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

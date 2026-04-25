@@ -10,14 +10,22 @@ defmodule TokenDashex.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      compilers: [:phoenix_live_view] ++ Mix.compilers(),
+      compilers: [:phoenix_live_view, :boundary] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
       releases: releases(),
       test_coverage: [tool: ExCoveralls],
+      dialyzer: [
+        plt_local_path: "priv/plts/local.plt",
+        plt_core_path: "priv/plts/core.plt",
+        plt_add_apps: [:mix, :ex_unit],
+        flags: [:unmatched_returns, :error_handling, :underspecs]
+      ],
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.detail": :test,
-        "coveralls.html": :test
+        "coveralls.html": :test,
+        credo: :test,
+        "dashex.check": :test
       ]
     ]
   end
@@ -112,7 +120,10 @@ defmodule TokenDashex.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
       {:burrito, "~> 1.3"},
-      {:excoveralls, "~> 0.18", only: :test}
+      {:excoveralls, "~> 0.18", only: :test},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:boundary, "~> 0.10", runtime: false}
     ]
   end
 
@@ -135,7 +146,7 @@ defmodule TokenDashex.MixProject do
         "esbuild token_dashex --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: ["compile --warnings-as-errors", "deps.unlock --check-unused", "format", "test"]
     ]
   end
 end

@@ -3,6 +3,7 @@ defmodule Mix.Tasks.Dashex.Tips do
   @shortdoc "Show active tips"
 
   use Mix.Task
+  use Boundary, check: [in: false, out: false]
 
   @impl Mix.Task
   def run(_args) do
@@ -14,7 +15,10 @@ defmodule Mix.Tasks.Dashex.Tips do
 
       tips ->
         Enum.each(tips, fn tip ->
-          Mix.shell().info(IO.ANSI.bright() <> "[#{tip.severity}] #{tip.title}" <> IO.ANSI.reset())
+          Mix.shell().info(
+            IO.ANSI.bright() <> "[#{tip.severity}] #{tip.title}" <> IO.ANSI.reset()
+          )
+
           Mix.shell().info(tip.body)
           Mix.shell().info("")
         end)

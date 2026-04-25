@@ -11,6 +11,7 @@ defmodule Mix.Tasks.Dashex.Dashboard do
   @shortdoc "Run scan, then start the dashboard"
 
   use Mix.Task
+  use Boundary, check: [in: false, out: false]
 
   @impl Mix.Task
   def run(args) do

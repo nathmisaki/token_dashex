@@ -81,8 +81,12 @@ defmodule TokenDashex.Scanner.Worker do
       |> Walker.walk()
       |> Enum.reduce({0, 0}, fn {path, slug}, {files_acc, records_acc} ->
         case scan_file(path, slug) do
-          {:ok, count} -> {files_acc + 1, records_acc + count}
-          :unchanged -> {files_acc, records_acc}
+          {:ok, count} ->
+            {files_acc + 1, records_acc + count}
+
+          :unchanged ->
+            {files_acc, records_acc}
+
           {:error, reason} ->
             Logger.warning("scanner failed on #{path}: #{inspect(reason)}")
             {files_acc, records_acc}

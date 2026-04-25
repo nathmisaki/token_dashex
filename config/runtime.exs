@@ -26,9 +26,7 @@ if config_env() == :prod do
 
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
-      RuntimeConfig.ensure_persistent_secret(
-        Path.join(Path.dirname(database), "secret_key_base")
-      )
+      RuntimeConfig.ensure_persistent_secret(Path.join(Path.dirname(database), "secret_key_base"))
 
   host = System.get_env("PHX_HOST") || "localhost"
   port = String.to_integer(System.get_env("PORT") || "8081")

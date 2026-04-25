@@ -41,3 +41,7 @@ token_dashex-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Dialyzer PLT cache
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
+

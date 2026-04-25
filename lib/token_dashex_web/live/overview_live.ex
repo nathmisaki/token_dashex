@@ -75,21 +75,33 @@ defmodule TokenDashexWeb.OverviewLive do
       </section>
 
       <div :if={@totals.all_time.sessions > 0} class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <.list_card title="Top projects" rows={@projects} cols={[
-          {"Project", & &1.project_slug},
-          {"Tokens", &Format.tokens(&1.input + &1.output)},
-          {"Sessions", & &1.sessions}
-        ]} />
+        <.list_card
+          title="Top projects"
+          rows={@projects}
+          cols={[
+            {"Project", & &1.project_slug},
+            {"Tokens", &Format.tokens(&1.input + &1.output)},
+            {"Sessions", & &1.sessions}
+          ]}
+        />
 
-        <.list_card title="Top tools" rows={@tools} cols={[
-          {"Tool", & &1.name},
-          {"Calls", & &1.invocations}
-        ]} />
+        <.list_card
+          title="Top tools"
+          rows={@tools}
+          cols={[
+            {"Tool", & &1.name},
+            {"Calls", & &1.invocations}
+          ]}
+        />
 
-        <.list_card title="By model" rows={@by_model} cols={[
-          {"Model", & &1.model},
-          {"Cost", &Format.usd(&1.cost)}
-        ]} />
+        <.list_card
+          title="By model"
+          rows={@by_model}
+          cols={[
+            {"Model", & &1.model},
+            {"Cost", &Format.usd(&1.cost)}
+          ]}
+        />
       </div>
     </Layouts.app>
     """
