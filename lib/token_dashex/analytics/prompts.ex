@@ -1,9 +1,10 @@
 defmodule TokenDashex.Analytics.Prompts do
   @moduledoc """
-  Lists the user's most expensive prompts. "Expensive" is defined as the sum
-  of the assistant turn(s) that immediately followed the user prompt within
-  the same session. We approximate that by aggregating per-session totals
-  and pairing each user prompt with its session's grand total.
+  Lists the user's most expensive prompts.
+
+  Each row pairs a user message with its immediate assistant response via
+  `parent_uuid` (the same join the Python token-dashboard uses). This gives
+  per-prompt token counts rather than whole-session aggregates.
   """
 
   import Ecto.Query
@@ -24,6 +25,7 @@ defmodule TokenDashex.Analytics.Prompts do
           cache_read_tokens: non_neg_integer(),
           cache_creation_5m: non_neg_integer(),
           cache_creation_1h: non_neg_integer(),
+          cache_creation_total: non_neg_integer(),
           input_tokens: non_neg_integer(),
           output_tokens: non_neg_integer(),
           estimated_cost_usd: float(),
@@ -38,46 +40,28 @@ defmodule TokenDashex.Analytics.Prompts do
     limit = Map.get(opts, :limit, @default_limit)
     offset = Map.get(opts, :offset, 0)
 
-    sums =
-      from m in Message,
-        where: m.role == "assistant",
-        group_by: m.session_id,
-        select: %{
-          session_id: m.session_id,
-          model: max(m.model),
-          input: coalesce(sum(m.input_tokens), 0),
-          output: coalesce(sum(m.output_tokens), 0),
-          cache_read: coalesce(sum(m.cache_read_tokens), 0),
-          cache_5m: coalesce(sum(m.cache_creation_5m_tokens), 0),
-          cache_1h: coalesce(sum(m.cache_creation_1h_tokens), 0),
-          cache_total: coalesce(sum(m.cache_creation_tokens), 0),
-          billable:
-            coalesce(sum(m.input_tokens), 0) +
-              coalesce(sum(m.output_tokens), 0) +
-              coalesce(sum(m.cache_creation_5m_tokens), 0) +
-              coalesce(sum(m.cache_creation_1h_tokens), 0)
-        }
-
     base =
       from u in Message,
         as: :user,
-        where: u.role == "user" and not is_nil(u.prompt_text),
-        join: s in subquery(sums),
-        as: :sums,
-        on: s.session_id == u.session_id,
+        where: u.role == "user" and not is_nil(u.prompt_text) and not is_nil(u.uuid),
+        join: a in Message,
+        as: :assistant,
+        on: a.role == "assistant" and a.parent_uuid == u.uuid,
         select: %{
           message_id: u.id,
           session_id: u.session_id,
           project_slug: u.project_slug,
           prompt_text: u.prompt_text,
-          model: s.model,
-          input_tokens: s.input,
-          output_tokens: s.output,
-          cache_read_tokens: s.cache_read,
-          cache_creation_5m: s.cache_5m,
-          cache_creation_1h: s.cache_1h,
-          cache_creation_total: s.cache_total,
-          billable_tokens: s.billable,
+          model: a.model,
+          input_tokens: a.input_tokens,
+          output_tokens: a.output_tokens,
+          cache_read_tokens: a.cache_read_tokens,
+          cache_creation_5m: a.cache_creation_5m_tokens,
+          cache_creation_1h: a.cache_creation_1h_tokens,
+          cache_creation_total: a.cache_creation_tokens,
+          billable_tokens:
+            a.input_tokens + a.output_tokens + a.cache_creation_5m_tokens +
+              a.cache_creation_1h_tokens,
           timestamp: u.timestamp
         }
 
@@ -107,5 +91,12 @@ defmodule TokenDashex.Analytics.Prompts do
     do: from([user: u] in query, order_by: [desc: u.timestamp])
 
   defp apply_sort(query, _),
-    do: from([sums: s] in query, order_by: [desc: s.billable])
+    do:
+      from([assistant: a] in query,
+        order_by: [
+          desc:
+            a.input_tokens + a.output_tokens + a.cache_creation_5m_tokens +
+              a.cache_creation_1h_tokens
+        ]
+      )
 end

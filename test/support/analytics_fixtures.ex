@@ -8,6 +8,8 @@ defmodule TokenDashex.AnalyticsFixtures do
     defaults = %{
       session_id: "s1",
       message_id: "m_#{:erlang.unique_integer([:positive])}",
+      uuid: "uuid-#{:erlang.unique_integer([:positive])}",
+      parent_uuid: nil,
       project_slug: "demo",
       role: "assistant",
       model: "claude-sonnet-4-6",

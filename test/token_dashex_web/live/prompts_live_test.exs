@@ -6,28 +6,32 @@ defmodule TokenDashexWeb.PromptsLiveTest do
   alias TokenDashex.AnalyticsFixtures
 
   setup do
-    AnalyticsFixtures.insert_message(
+    user1 = AnalyticsFixtures.insert_message(
       session_id: "shared",
       role: "user",
+      uuid: "u1",
       prompt_text: "First prompt body"
     )
 
     AnalyticsFixtures.insert_message(
       session_id: "shared",
       role: "assistant",
+      parent_uuid: user1.uuid,
       input_tokens: 200,
       output_tokens: 800
     )
 
-    AnalyticsFixtures.insert_message(
+    user2 = AnalyticsFixtures.insert_message(
       session_id: "other",
       role: "user",
+      uuid: "u2",
       prompt_text: "Quieter prompt"
     )
 
     AnalyticsFixtures.insert_message(
       session_id: "other",
       role: "assistant",
+      parent_uuid: user2.uuid,
       input_tokens: 5,
       output_tokens: 5
     )
@@ -35,16 +39,16 @@ defmodule TokenDashexWeb.PromptsLiveTest do
     :ok
   end
 
-  test "renders prompts table sorted by total by default", %{conn: conn} do
+  test "renders prompts table sorted by tokens by default", %{conn: conn} do
     {:ok, _view, html} = live(conn, "/prompts")
     assert html =~ "First prompt body"
     assert html =~ "Quieter prompt"
   end
 
-  test "switches sort when clicking the input button", %{conn: conn} do
+  test "switches sort when clicking most recent button", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/prompts")
 
-    html = render_click(view, "sort", %{"by" => "input"})
+    html = render_click(view, "sort", %{"by" => "recent"})
     assert html =~ "First prompt body"
   end
 end
