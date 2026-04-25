@@ -16,6 +16,15 @@ defmodule TokenDashexWeb.Router do
 
   scope "/", TokenDashexWeb do
     pipe_through :browser
+
+    live "/", OverviewLive, :index
+    live "/prompts", PromptsLive, :index
+    live "/sessions", SessionsLive, :index
+    live "/sessions/:id", SessionShowLive, :show
+    live "/projects", ProjectsLive, :index
+    live "/skills", SkillsLive, :index
+    live "/tips", TipsLive, :index
+    live "/settings", SettingsLive, :index
   end
 
   if Application.compile_env(:token_dashex, :dev_routes) do
