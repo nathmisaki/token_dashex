@@ -1,0 +1,14 @@
+{
+  "coverage_options": {
+    "minimum_coverage": 60,
+    "treat_no_relevant_lines_as_covered": true
+  },
+  "skip_files": [
+    "lib/token_dashex/application.ex",
+    "lib/token_dashex_web/endpoint.ex",
+    "lib/token_dashex_web/telemetry.ex",
+    "lib/token_dashex_web/gettext.ex",
+    "lib/mix/tasks/dashex/dashboard.ex",
+    "test/"
+  ]
+}
