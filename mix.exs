@@ -13,6 +13,7 @@ defmodule TokenDashex.MixProject do
       compilers: [:phoenix_live_view, :boundary] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
       releases: releases(),
+      default_release: :token_dashex,
       test_coverage: [tool: ExCoveralls],
       dialyzer: [
         plt_local_path: "priv/plts/local.plt",
@@ -30,25 +31,9 @@ defmodule TokenDashex.MixProject do
     ]
   end
 
-  # Two release targets:
-  #
-  #   * `token_dashex` — default, bundles ERTS for the current host.
-  #     Use this for local builds on the same OS+arch as deployment.
-  #
-  #   * `token_dashex_macos_arm64` — thin release without ERTS, intended
-  #     to be cross-built on Linux CI and run on macOS arm64 hosts that
-  #     already have Erlang/OTP 28 installed (e.g. via Homebrew, asdf).
-  #     Combined with `CC_PRECOMPILER_CURRENT_TARGET=aarch64-apple-darwin`
-  #     in CI this produces a tarball whose NIFs target Apple Silicon.
   defp releases do
     [
       token_dashex: [
-        include_executables_for: [:unix],
-        steps: [:assemble, :tar]
-      ],
-      token_dashex_macos_arm64: [
-        applications: [token_dashex: :permanent],
-        include_erts: false,
         include_executables_for: [:unix],
         steps: [:assemble, :tar]
       ],
