@@ -46,8 +46,7 @@ defmodule TokenDashex.MixProject do
         burrito: [
           targets: [
             linux_x86_64: [os: :linux, cpu: :x86_64],
-            macos_arm64: [os: :darwin, cpu: :aarch64],
-            windows_x86_64: [os: :windows, cpu: :x86_64]
+            macos_arm64: [os: :darwin, cpu: :aarch64]
           ]
         ]
       ]
