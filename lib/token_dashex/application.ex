@@ -13,6 +13,7 @@ defmodule TokenDashex.Application do
     children = [
       TokenDashexWeb.Telemetry,
       TokenDashex.Repo,
+      migrator_child(),
       {DNSCluster, query: Application.get_env(:token_dashex, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: TokenDashex.PubSub},
       scanner_child(),
@@ -21,6 +22,15 @@ defmodule TokenDashex.Application do
 
     opts = [strategy: :one_for_one, name: TokenDashex.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  @doc false
+  def run_migrations do
+    for repo <- Application.fetch_env!(:token_dashex, :ecto_repos) do
+      {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
+    end
+
+    :ignore
   end
 
   @impl true
@@ -34,5 +44,14 @@ defmodule TokenDashex.Application do
      root: TokenDashex.Paths.projects_dir(),
      interval: Application.get_env(:token_dashex, :scanner_interval_ms, 30_000),
      auto_tick: Application.get_env(:token_dashex, :scanner_auto_tick, true)}
+  end
+
+  defp migrator_child do
+    %{
+      id: :token_dashex_migrator,
+      start: {__MODULE__, :run_migrations, []},
+      restart: :temporary,
+      type: :worker
+    }
   end
 end
